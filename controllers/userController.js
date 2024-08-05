@@ -1,6 +1,7 @@
 const asyncHandler = require("express-async-handler")
 const User = require("../model/user")
 const mongoose = require("mongoose")
+
 const getAllUsers = asyncHandler(async(req,res)=>{
     const users = await User.find()
     return res.status(200).json(users)
@@ -65,7 +66,7 @@ const deleteUser =asyncHandler(async(req,res)=>{
     if (!user) {
         return res.status(404).json({ message: 'User not found' });
       }    
-      
+
     await User.findByIdAndDelete(id)
     return res.status(200).json({msg:`${id} has been deleted`})
 })

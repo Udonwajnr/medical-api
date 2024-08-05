@@ -10,6 +10,7 @@ app.use(express.json())
 app.use(express.urlencoded({extended:false}))
 
 app.use('/api/user',require('./route/userRoute'))
+app.use('/api/medication',require('./route/medicationRoute'))
 app.listen(port,()=>{
     console.log(`I'm Back`)
 })
