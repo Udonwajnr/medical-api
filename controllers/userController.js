@@ -90,8 +90,10 @@ const addMedicationToUser=asyncHandler(async(req,res)=>{
       res.status(200).json({ message: 'Medication added to user successfully' });
 })
 
-const removeMedicationFromUser = async (userId, drugId) => {
-    // Remove the drug reference from the user's drugs array
+const removeMedicationFromUser = async (req, res) => {
+  const { userId, medicationId} = req.params;
+
+  // Remove the drug reference from the user's drugs array
     await User.findByIdAndUpdate(
       userId,
       { $pull: { medication: medicationId } }, // $pull removes the specified value
@@ -106,6 +108,7 @@ const removeMedicationFromUser = async (userId, drugId) => {
     );
 
     console.log('Drug removed from user and vice versa successfully');
+    return res.status(200).json({msg:"Drug removed from user and vice versa successfully"})
   }
 
   const findUsersWithDrug =  async (req, res) => {
