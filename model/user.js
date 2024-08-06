@@ -12,13 +12,15 @@ const userSchema = new schema({
         required:true
     },
     gender:{
-        type:String
+        type:String,
+        required:true
     },
     phoneNumber:{
-        type:String
+        type:String,
+        required:true
     },
     email:{
-        type:String
+        type:String,
     },
     medication:[{
      type:mongoose.Types.ObjectId,

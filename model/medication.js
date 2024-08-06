@@ -20,10 +20,10 @@ const medicationSchema = new schema({
         type: Date,
         required: true,
       },
-      user:{
+      user:[{
         type:mongoose.Types.ObjectId,
         ref:"User",
-      },
+      }],
       notes: {
         type: String,
 
