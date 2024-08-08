@@ -4,7 +4,9 @@ const connectDb = require("./config/db")
 const dotenv = require("dotenv").config()
 const port = process.env.PORT||3000
 const colors = require("colors")
+const calender = require("./controllers/calenderGenerator")
 let cors = require("cors")
+const email = require("./middleware/email")
 
 app.use(express.json())
 app.use(express.urlencoded({extended:false}))
@@ -14,6 +16,7 @@ app.use('/api/medication',require('./route/medicationRoute'))
 app.listen(port,()=>{
     console.log(`I'm Back`)
 })
+
 
 
 

@@ -1,9 +1,10 @@
 const express = require("express")
 const router = express.Router()
-const {getUser,getAllUsers,createUser,updateUser,deleteUser,addMedicationToUser,removeMedicationFromUser,findUsersWithDrug} = require("../controllers/userController")
+const {getUser,getAllUsers,createUser,updateUser,deleteUser,addMedicationToUser,removeMedicationFromUser,findUsersWithDrug,getUserMedicationData} = require("../controllers/userController")
 
 router.route("/:id").get(getUser)
 router.route("/").get(getAllUsers)
+router.route("/user/:userId/medications").get(getUserMedicationData)
 router.route("/").post(createUser)
 router.route("/:id").put(updateUser)
 router.route("/:id").delete(deleteUser)

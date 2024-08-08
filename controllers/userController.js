@@ -3,10 +3,12 @@ const User = require("../model/user")
 const mongoose = require("mongoose")
 const Medication=require("../model/medication")
 
+// get All Users in the hospital
 const getAllUsers = asyncHandler(async(req,res)=>{
     const users = await User.find().populate("medication")
     return res.status(200).json(users)
 })
+// get All a single user in the hospital
 
 const getUser = asyncHandler(async (req, res) => {
     const { id } = req.params;
@@ -28,12 +30,15 @@ const getUser = asyncHandler(async (req, res) => {
      
   });
 
+  // create a new user 
 const createUser = asyncHandler(async(req,res)=>{
     const {fullName,dateOfBirth,gender,phoneNumber,email,medication} = req.body
     const user = new User({fullName,dateOfBirth,gender,phoneNumber,email,medication})
     await user.save()
     res.status(200).json(user)
 })
+
+// update the users record
 
 const updateUser = asyncHandler(async (req, res) => {
         const { id } = req.params;
@@ -55,7 +60,7 @@ const updateUser = asyncHandler(async (req, res) => {
           // Return the updated user
           return res.status(200).json(updatedUser);
 })
-
+// delete the user 
 const deleteUser =asyncHandler(async(req,res)=>{
     const {id} = req.params
     
@@ -71,6 +76,8 @@ const deleteUser =asyncHandler(async(req,res)=>{
     await User.findByIdAndDelete(id)
     return res.status(200).json({msg:`${id} has been deleted`})
 })
+
+// add medication to user 
 
 
 const addMedicationToUser=asyncHandler(async(req,res)=>{
@@ -90,6 +97,7 @@ const addMedicationToUser=asyncHandler(async(req,res)=>{
       res.status(200).json({ message: 'Medication added to user successfully' });
 })
 
+// remove medication from user
 const removeMedicationFromUser = async (req, res) => {
   const { userId, medicationId} = req.params;
 
@@ -111,6 +119,8 @@ const removeMedicationFromUser = async (req, res) => {
     return res.status(200).json({msg:"Drug removed from user and vice versa successfully"})
   }
 
+  // find all users with
+
   const findUsersWithDrug =  async (req, res) => {
       const { medicationId } = req.params;
       try {
@@ -125,4 +135,11 @@ const removeMedicationFromUser = async (req, res) => {
       }
     };
 
-module.exports = {getUser,getAllUsers,createUser,updateUser,deleteUser,addMedicationToUser,removeMedicationFromUser,findUsersWithDrug}
+    const getUserMedicationData = asyncHandler(async(req,res)=>{
+      const {id}=req.params
+      const user = await User.findById(id);
+      const medications = await Medication.find({ id: user._id });
+      return { user, medications };
+    })
+
+module.exports = {getUser,getAllUsers,createUser,updateUser,deleteUser,addMedicationToUser,removeMedicationFromUser,findUsersWithDrug,getUserMedicationData}

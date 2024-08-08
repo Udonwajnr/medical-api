@@ -67,4 +67,12 @@ const deleteMedication =asyncHandler(async(req,res)=>{
     return res.status(200).json({msg:`${id} has been deleted`})
 })
 
-module.exports={getAllMedications,getMedication,createMedication,deleteMedication,updateMedication}
+
+const getUserMedicationData = asyncHandler(async(req,res)=>{
+    const {id} = req.params
+    const user = await User.findById(id);
+    const medications = await Medication.find({ id: user._id });
+    res.status(200).json({ user, medications });
+  })
+
+module.exports={getAllMedications,getMedication,createMedication,deleteMedication,updateMedication,getUserMedicationData}
