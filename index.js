@@ -6,13 +6,14 @@ const port = process.env.PORT||3000
 const colors = require("colors")
 const calender = require("./controllers/calenderGenerator")
 let cors = require("cors")
-const email = require("./middleware/email")
+// const email = require("./middleware/email")
 
 app.use(express.json())
 app.use(express.urlencoded({extended:false}))
 
 app.use('/api/user',require('./route/userRoute'))
 app.use('/api/medication',require('./route/medicationRoute'))
+app.use('/api/email',require('./route/emailReminder'))
 app.listen(port,()=>{
     console.log(`I'm Back`)
 })

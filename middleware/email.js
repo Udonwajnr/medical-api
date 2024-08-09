@@ -16,7 +16,7 @@ const transporter = nodemailer.createTransport({
 
   const mailOptions = {
     from: 'umohu67@gmail.com',
-    to: 'ikikanke@gmail.com',
+    to: 'udonwajnr10@gmail.com',
     subject: 'Your Medication Reminders',
     text: 'Please find your medication reminders attached. Click the link to add them to your calendar.',
     attachments: [

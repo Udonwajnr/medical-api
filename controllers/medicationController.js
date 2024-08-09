@@ -75,4 +75,5 @@ const getUserMedicationData = asyncHandler(async(req,res)=>{
     res.status(200).json({ user, medications });
   })
 
+
 module.exports={getAllMedications,getMedication,createMedication,deleteMedication,updateMedication,getUserMedicationData}

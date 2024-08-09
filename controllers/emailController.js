@@ -1,0 +1,65 @@
+const nodemailer = require('nodemailer');
+const path = require('path');
+const generateICSFile = require('../middleware/generateICSFile');
+const User = require('../model/user');
+
+const sendMedicationReminderEmail = async (req, res) => {
+    const { userId } = req.body;
+
+    if (!userId) {
+        return res.status(400).json({ error: 'UserId is required' });
+    }
+
+    try {
+        const user = await User.findById(userId);
+
+        if (!user) {
+            return res.status(404).json({ error: 'User not found' });
+        }
+
+        // Generate the ICS file
+        const icsFilePath = await generateICSFile(userId);
+
+        if (!icsFilePath) {
+            return res.status(500).json({ error: 'Failed to generate ICS file' });
+        }
+
+        const transporter = nodemailer.createTransport({
+            service: 'Gmail',
+            auth: {
+                user: 'umohu67@gmail.com',
+                pass: process.env.EMAIL_PASSCODE,
+            },
+        });
+
+        const mailOptions = {
+            from: 'umohu67@gmail.com',
+            to: user.email,
+            subject: 'Your Medication Reminders',
+            text: 'Please find your medication reminders attached. Click the link to add them to your calendar.',
+            attachments: [
+                {
+                    filename: 'medication-reminders.ics',
+                    path: icsFilePath,
+                    contentType: 'text/calendar',
+                },
+            ],
+        };
+
+        transporter.sendMail(mailOptions, (error, info) => {
+            if (error) {
+                console.error('Error sending email:', error);
+                return res.status(500).json({ error: 'Failed to send email' });
+            } else {
+                console.log('Email sent successfully:', info.response);
+                return res.status(200).json({ msg: 'Email sent successfully' });
+            }
+        });
+    } catch (error) {
+        console.error('Error sending email:', error);
+        return res.status(500).json({ error: 'Internal Server Error' });
+    }
+};
+
+
+module.exports = { sendMedicationReminderEmail };
