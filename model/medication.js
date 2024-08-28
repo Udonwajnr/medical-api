@@ -16,26 +16,59 @@ const medicationSchema = new schema({
         enum: ['daily', 'twice_daily', 'three_times_daily', 'weekly'],
         required: true,
       },
-      time: {
-        type: Date,
-        required: true,
-      },
-      user:[{
-        type:mongoose.Types.ObjectId,
-        ref:"User",
-      }],
-      notes: {
-        type: String,
-
-      },
-      reminderSent: {
-        type: Boolean,
-        default: false,
-      },
-      createdAt: {
-        type: Date,
-        default: Date.now,
-      },
+    time: {
+      type: Date,
+      required: true,
+    },
+    notes: {
+      type: String,
+    },
+    quantity:{
+      type:Number,
+      required:true
+    },
+    price: {
+      type: Number,
+      required: true,
+    },
+    expiryDate: {
+      type: Date,
+      required: true,
+    },
+    inStock: {
+      type: Boolean,
+      default: true,
+    },
+    reorderLevel: {
+      type: Number,
+      default: 10,
+    },
+    user:[{
+      type:mongoose.Types.ObjectId,
+      ref:"User",
+    }],
+    hospital:[{
+      type:mongoose.Types.ObjectId,
+      ref:"Hospital"
+    }],
+    reminderSent: {
+      type: Boolean,
+      default: false,
+    },
+    createdAt: {
+      type: Date,
+      default: Date.now,
+    },
 })
+
+medicationSchema.pre('save', function (next) {
+  // Automatically set inStock to false if quantity is 0
+  if (this.quantity === 0) {
+    this.inStock = false;
+  } else {
+    this.inStock = true;
+  }
+  next();
+});
 
 module.exports=mongoose.model("Medication",medicationSchema)

@@ -26,6 +26,10 @@ const userSchema = new schema({
      type:mongoose.Types.ObjectId,
      ref:"Medication"   
     }],
+    hospital:[{
+        type:mongoose.Types.ObjectId,
+        ref:"Hospital"
+    }]
 })
 
 module.exports = mongoose.model("User", userSchema)
