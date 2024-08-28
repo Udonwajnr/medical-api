@@ -53,7 +53,8 @@ const medicationSchema = new schema({
     }],
     hospital:[{
       type:mongoose.Types.ObjectId,
-      ref:"Hospital"
+      ref:"Hospital",
+      required:true
     }],
     reminderSent: {
       type: Boolean,
