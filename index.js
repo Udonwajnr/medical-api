@@ -13,6 +13,7 @@ app.use(express.urlencoded({extended:false}))
 
 // 
 app.use("/api/hospital",require("./route/hospitalAuthenticationRoute.js"))
+
 // 
 app.use('/api/user',require('./route/userRoute'))
 app.use('/api/medication',require('./route/medicationRoute'))

@@ -214,9 +214,131 @@ const resetPassword = asyncHandler(async (req, res) => {
     }
 });
 
+const getAllHospitals = asyncHandler(async (req, res) => {
+    const hospitals = await Hospital.find().populate('user').populate('medication');
+
+    res.status(200).json(hospitals);
+});
 
 
+const getHospitalById = asyncHandler(async (req, res) => {
+    const { id } = req.params;
+
+    const hospital = await Hospital.findById(id).populate('user').populate('medication');
+
+    if (!hospital) {
+        return res.status(404).json({ msg: 'Hospital not found' });
+    }
+
+    res.status(200).json(hospital);
+});
+// check this again
+
+const searchHospitals = asyncHandler(async (req, res) => {
+    const { query } = req.query;
+
+    const hospitals = await Hospital.find({
+        $or: [
+            { name: { $regex: query, $options: 'i' } },
+            { address: { $regex: query, $options: 'i' } },
+            { phone: { $regex: query, $options: 'i' } },
+        ],
+    });
+
+    res.status(200).json(hospitals);
+});
 
 
+const updateHospital = asyncHandler(async (req, res) => {
+    const { id } = req.params;
+    const { name, address, phone, operatingHours, socialMedia, email } = req.body;
 
-module.exports={createHospital,verifyEmail,loginHospital,forgotPassword,resetPassword}
+    let hospital = await Hospital.findById(id);
+
+    if (!hospital) {
+        return res.status(404).json({ msg: 'Hospital not found' });
+    }
+
+    // If the email is being updated, check if the new email already exists
+    if (email && email !== hospital.email) {
+        const emailExists = await Hospital.findOne({ email });
+        if (emailExists) {
+            return res.status(400).json({ msg: 'Email already in use by another hospital' });
+        }
+
+        // Update email and set isVerified to false
+        hospital.email = email;
+        hospital.isVerified = false; // Re-verify the email
+
+        // Generate a new verification token
+        const verificationToken = JWT.sign(
+            { id: hospital._id }, 
+            process.env.JWT_SECRET, 
+            { expiresIn: '1h' }
+        );
+        hospital.verificationToken = verificationToken;
+
+        // Send verification email to the new email address
+        const transporter = nodemailer.createTransport({
+            service: 'gmail',
+            auth: {
+                user: process.env.EMAIL_USER,
+                pass: process.env.EMAIL_PASSCODE,
+            },
+        });
+
+        const mailOptions = {
+            to: email,
+            from: process.env.EMAIL_USER,
+            subject: 'Email Verification',
+            text: `Please verify your new email address by clicking the following link:\n\n
+            http://${req.headers.host}/verify-email/${verificationToken}\n\n
+            This link will expire in 1 hour.\n
+            If you did not request this, please ignore this email.\n`,
+        };
+
+        transporter.sendMail(mailOptions, (err, response) => {
+            if (err) {
+                console.error('There was an error:', err);
+            }
+        });
+    }
+
+    // Update other fields
+    hospital.name = name || hospital.name;
+    hospital.address = address || hospital.address;
+    hospital.phone = phone || hospital.phone;
+    hospital.operatingHours = operatingHours || hospital.operatingHours;
+    hospital.socialMedia = socialMedia || hospital.socialMedia;
+
+    await hospital.save();
+
+    res.status(200).json({ msg: 'Hospital details updated successfully. Please verify your new email.', hospital });
+});
+
+
+const deleteHospital = asyncHandler(async (req, res) => {
+    const { id } = req.params;
+
+    const hospital = await Hospital.findById(id);
+
+    if (!hospital) {
+        return res.status(404).json({ msg: 'Hospital not found' });
+    }
+
+    await hospital.remove();
+
+    res.status(200).json({ msg: 'Hospital deleted successfully' });
+});
+
+
+module.exports={createHospital,
+    verifyEmail,
+    loginHospital,
+    forgotPassword,
+    resetPassword,
+    updateHospital,
+    getHospitalById,
+    deleteHospital,
+    searchHospitals,
+    getAllHospitals}

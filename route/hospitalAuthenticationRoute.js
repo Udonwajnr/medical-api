@@ -1,11 +1,28 @@
 const express = require("express")
 const router = express.Router()
-const {createHospital,verifyEmail,loginHospital,forgotPassword,resetPassword} = require("../controllers/HospitalAuthenticationController")
+const {createHospital,
+    verifyEmail,
+    loginHospital,
+    forgotPassword,
+    resetPassword,
+    updateHospital,
+    getHospitalById,
+    deleteHospital,
+    searchHospitals,
+    getAllHospitals
+} = require("../controllers/HospitalAuthenticationController")
+// Authentication
+router.post('/register', createHospital);
+router.post('/login', loginHospital);
+router.post('/forgot-password', forgotPassword);
+router.post('/reset-password', resetPassword);
+router.get('/verify-email/:token', verifyEmail);
+// 
+router.get('/search', searchHospitals);
+router.put('/:id', updateHospital);
+router.get('/:id', getHospitalById);
+router.delete('/:id', deleteHospital);
+router.get('/', getAllHospitals);
 
-router.route("/").post(createHospital)
-router.route("/verify-email/:token").get(verifyEmail)
-router.route("/login").post(loginHospital)
-router.route('/forgot-password').post(forgotPassword)
-router.route('/reset-password').post(resetPassword)
 
 module.exports=router

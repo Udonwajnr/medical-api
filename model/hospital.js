@@ -36,10 +36,7 @@ const HospitalSchema = new mongoose.Schema({
     twitter: String,
     instagram: String,
   },
-  barcode: {
-    type: String,
-    unique: true,
-  },
+  
   verificationToken:{
     type:String,
   },
