@@ -23,7 +23,7 @@ const medicationSchema = new schema({
     notes: {
       type: String,
     },
-    quantity:{
+    quantityInStock:{
       type:Number,
       required:true
     },
@@ -62,13 +62,15 @@ const medicationSchema = new schema({
 })
 
 medicationSchema.pre('save', function (next) {
-  // Automatically set inStock to false if quantity is 0
-  if (this.quantity === 0) {
+  // Automatically set inStock to false if quantityInStock is 0
+  if (this.quantityInStock === 0) {
     this.inStock = false;
   } else {
     this.inStock = true;
   }
   next();
 });
+
+module.exports = mongoose.model("Medication", medicationSchema);
 
 module.exports=mongoose.model("Medication",medicationSchema)
