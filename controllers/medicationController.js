@@ -98,6 +98,13 @@ const updateMedicationOfHospital = asyncHandler(async (req, res) => {
         .populate("user")
         .populate("hospital");
 
+    // Update the hospital's medication list if necessary
+    const hospital = await Hospital.findById(hospitalId);
+    if (hospital && !hospital.medication.includes(updatedMedication._id)) {
+        hospital.medication.push(updatedMedication._id);
+        await hospital.save();
+    }
+
     return res.status(200).json(updatedMedication);
 });
 
@@ -112,6 +119,13 @@ const deleteMedicationOfHospital = asyncHandler(async (req, res) => {
     const medication = await Medication.findOne({ _id: id, hospital: hospitalId });
     if (!medication) {
         return res.status(404).json({ message: 'Medication not found in the specified hospital' });
+    }
+
+    // Remove the medication from the hospital's medication list
+    const hospital = await Hospital.findById(hospitalId);
+    if (hospital) {
+        hospital.medication.pull(medication._id);
+        await hospital.save();
     }
 
     await Medication.findByIdAndDelete(id);

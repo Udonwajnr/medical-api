@@ -1,145 +1,243 @@
-const asyncHandler = require("express-async-handler")
-const User = require("../model/user")
-const mongoose = require("mongoose")
-const Medication=require("../model/medication")
+const asyncHandler = require("express-async-handler");
+const User = require("../model/user");
+const Medication = require("../model/medication");
+const Hospital = require("../model/hospital"); // Import the Hospital model
+const mongoose = require("mongoose");
 
-// get All Users in the hospital
-const getAllUsers = asyncHandler(async(req,res)=>{
-    const users = await User.find().populate("medication")
-    return res.status(200).json(users)
-})
-// get All a single user in the hospital
+// Get all users for a specific hospital
+const getUsersByHospital = asyncHandler(async (req, res) => {
+  const { hospitalId } = req.params;
+  const users = await User.find({ hospital: hospitalId }).populate("medication");
+  return res.status(200).json(users);
+});
 
-const getUser = asyncHandler(async (req, res) => {
-    const { id } = req.params;
-  
-    // Validate the ObjectID
-    if (!mongoose.Types.ObjectId.isValid(id)) {
-      return res.status(400).json({ message: 'Invalid user ID format' });
-    }
-        // Fetch the user from the database
-      const user = await User.findById(id);
-  
-      // Check if user exists
-      if (!user) {
-        return res.status(404).json({ message: 'User not found' });
-      }
-  
-      // Return the user
-      return res.status(200).json(user);
-     
-  });
+// Get a single user in a specific hospital
+const getUserInHospital = asyncHandler(async (req, res) => {
+  const { hospitalId, userId } = req.params;
 
-  // create a new user 
-const createUser = asyncHandler(async(req,res)=>{
-    const {fullName,dateOfBirth,gender,phoneNumber,email,medication} = req.body
-    const user = new User({fullName,dateOfBirth,gender,phoneNumber,email,medication})
-    await user.save()
-    res.status(200).json(user)
-})
-
-// update the users record
-
-const updateUser = asyncHandler(async (req, res) => {
-        const { id } = req.params;
-      
-        // Validate the ObjectID
-        if (!mongoose.Types.ObjectId.isValid(id)) {
-          return res.status(400).json({ message: 'Invalid user ID format' });
-        }
-      
-          // Check if the user exists
-          const user = await User.findById(id);
-          if (!user) {
-            return res.status(404).json({ message: 'User not found' });
-          }
-      
-          // Update the user
-          const updatedUser = await User.findByIdAndUpdate(id, req.body, { new: true, runValidators: true });
-      
-          // Return the updated user
-          return res.status(200).json(updatedUser);
-})
-// delete the user 
-const deleteUser =asyncHandler(async(req,res)=>{
-    const {id} = req.params
-    
-    const user = await User.findById(id)
-    if (!mongoose.Types.ObjectId.isValid(id)) {
-        return res.status(400).json({ message: 'Invalid user ID format' });
-    }
-
-    if (!user) {
-        return res.status(404).json({ message: 'User not found' });
-      }    
-
-    await User.findByIdAndDelete(id)
-    return res.status(200).json({msg:`${id} has been deleted`})
-})
-
-// add medication to user 
-
-
-const addMedicationToUser=asyncHandler(async(req,res)=>{
-  const { userId, medicationId } = req.params;
-  
-      await User.findByIdAndUpdate(
-        userId,
-        { $addToSet: { medication: medicationId } },
-        { new: true }
-      );
-      
-      await Medication.findByIdAndUpdate(
-        medicationId,
-        { $addToSet: { user: userId } },
-        { new: true }
-      );
-      res.status(200).json({ message: 'Medication added to user successfully' });
-})
-
-// remove medication from user
-const removeMedicationFromUser = async (req, res) => {
-  const { userId, medicationId} = req.params;
-
-  // Remove the drug reference from the user's drugs array
-    await User.findByIdAndUpdate(
-      userId,
-      { $pull: { medication: medicationId } }, // $pull removes the specified value
-      { new: true }
-    );
-    
-    // Remove the user reference from the drug's users array
-    await Medication.findByIdAndUpdate(
-      medicationId,
-      { $pull: { user: userId } }, // $pull removes the specified value
-      { new: true }
-    );
-
-    console.log('Drug removed from user and vice versa successfully');
-    return res.status(200).json({msg:"Drug removed from user and vice versa successfully"})
+  // Validate ObjectIDs
+  if (!mongoose.Types.ObjectId.isValid(hospitalId) || !mongoose.Types.ObjectId.isValid(userId)) {
+    return res.status(400).json({ message: "Invalid ID format" });
   }
 
-  // find all users with
+  // Fetch the user within the specified hospital
+  const user = await User.findOne({ _id: userId, hospital: hospitalId });
 
-  const findUsersWithDrug =  async (req, res) => {
-      const { medicationId } = req.params;
-      try {
-        const medication = await Medication.findById(medicationId).populate('user');
-        
-        if (!medication) {
-          return res.status(404).json({ message: 'Drug not found' });
-        }
-        res.status(200).json(medication.user);
-      } catch (err) {
-        res.status(500).json({ message: 'Error finding users with drug', error: err.message });
-      }
-    };
+  // Check if user exists
+  if (!user) {
+    return res.status(404).json({ message: "User not found in the specified hospital" });
+  }
 
-    const getUserMedicationData = asyncHandler(async(req,res)=>{
-      const {id}=req.params
-      const user = await User.findById(id);
-      const medications = await Medication.find({ id: user._id });
-      return { user, medications };
-    })
+  // Return the user
+  return res.status(200).json(user);
+});
 
-module.exports = {getUser,getAllUsers,createUser,updateUser,deleteUser,addMedicationToUser,removeMedicationFromUser,findUsersWithDrug,getUserMedicationData}
+// Create a new user for a specific hospital
+const createUserInHospital = asyncHandler(async (req, res) => {
+  const { hospitalId } = req.params;
+  const { fullName, dateOfBirth, gender, phoneNumber, email, medication } = req.body;
+
+  // Create the new user
+  const user = new User({
+    fullName,
+    dateOfBirth,
+    gender,
+    phoneNumber,
+    email,
+    medication,
+    hospital: [hospitalId],
+  });
+
+  await user.save();
+
+  // Update the hospital to include the new user
+  await Hospital.findByIdAndUpdate(
+    hospitalId,
+    { $addToSet: { users: user._id } },
+    { new: true }
+  );
+
+  res.status(201).json(user);
+});
+
+// Update a user in a specific hospital
+const updateUserInHospital = asyncHandler(async (req, res) => {
+  const { hospitalId, userId } = req.params;
+
+  // Validate ObjectIDs
+  if (!mongoose.Types.ObjectId.isValid(hospitalId) || !mongoose.Types.ObjectId.isValid(userId)) {
+    return res.status(400).json({ message: "Invalid ID format" });
+  }
+
+  // Check if the user exists within the specified hospital
+  const user = await User.findOne({ _id: userId, hospital: hospitalId });
+  if (!user) {
+    return res.status(404).json({ message: "User not found in the specified hospital" });
+  }
+
+  // Update the user
+  const updatedUser = await User.findByIdAndUpdate(userId, req.body, {
+    new: true,
+    runValidators: true,
+  });
+
+  // Return the updated user
+  return res.status(200).json(updatedUser);
+});
+
+// Delete a user in a specific hospital
+const deleteUserInHospital = asyncHandler(async (req, res) => {
+  const { hospitalId, userId } = req.params;
+
+  // Validate ObjectIDs
+  if (!mongoose.Types.ObjectId.isValid(hospitalId) || !mongoose.Types.ObjectId.isValid(userId)) {
+    return res.status(400).json({ message: "Invalid ID format" });
+  }
+
+  // Check if the user exists within the specified hospital
+  const user = await User.findOne({ _id: userId, hospital: hospitalId });
+  if (!user) {
+    return res.status(404).json({ message: "User not found in the specified hospital" });
+  }
+
+  // Delete the user
+  await User.findByIdAndDelete(userId);
+
+  // Update the hospital to remove the deleted user
+  await Hospital.findByIdAndUpdate(
+    hospitalId,
+    { $pull: { users: userId } },
+    { new: true }
+  );
+
+  return res.status(200).json({ msg: `User with ID ${userId} has been deleted from hospital ${hospitalId}` });
+});
+
+// Add medication to a user in a specific hospital
+const addMedicationToUserInHospital = asyncHandler(async (req, res) => {
+  const { hospitalId, userId, medicationId } = req.params;
+
+  // Validate ObjectIDs
+  if (!mongoose.Types.ObjectId.isValid(hospitalId) || !mongoose.Types.ObjectId.isValid(userId) || !mongoose.Types.ObjectId.isValid(medicationId)) {
+    return res.status(400).json({ message: "Invalid ID format" });
+  }
+
+  await User.findOneAndUpdate(
+    { _id: userId, hospital: hospitalId },
+    { $addToSet: { medication: medicationId } },
+    { new: true }
+  );
+
+  await Medication.findByIdAndUpdate(
+    medicationId,
+    { $addToSet: { user: userId } },
+    { new: true }
+  );
+
+  res.status(200).json({ message: "Medication added to user successfully" });
+});
+
+// Remove medication from a user in a specific hospital
+const removeMedicationFromUserInHospital = asyncHandler(async (req, res) => {
+  const { hospitalId, userId, medicationId } = req.params;
+
+  // Validate ObjectIDs
+  if (!mongoose.Types.ObjectId.isValid(hospitalId) || !mongoose.Types.ObjectId.isValid(userId) || !mongoose.Types.ObjectId.isValid(medicationId)) {
+    return res.status(400).json({ message: "Invalid ID format" });
+  }
+
+  await User.findOneAndUpdate(
+    { _id: userId, hospital: hospitalId },
+    { $pull: { medication: medicationId } },
+    { new: true }
+  );
+
+  await Medication.findByIdAndUpdate(
+    medicationId,
+    { $pull: { user: userId } },
+    { new: true }
+  );
+
+  res.status(200).json({ message: "Medication removed from user successfully" });
+});
+
+// Get all users associated with a specific medication in a hospital
+const getUsersWithMedicationInHospital = asyncHandler(async (req, res) => {
+  const { hospitalId, medicationId } = req.params;
+
+  // Validate ObjectIDs
+  if (!mongoose.Types.ObjectId.isValid(hospitalId) || !mongoose.Types.ObjectId.isValid(medicationId)) {
+    return res.status(400).json({ message: "Invalid ID format" });
+  }
+
+  const medication = await Medication.findById(medicationId).populate({
+    path: "user",
+    match: { hospital: hospitalId },
+  });
+
+  if (!medication) {
+    return res.status(404).json({ message: "Medication not found" });
+  }
+
+  res.status(200).json(medication.user);
+});
+
+// Search users by name or other criteria within a specific hospital
+const searchUsersInHospital = asyncHandler(async (req, res) => {
+  const { hospitalId } = req.params;
+  const { query } = req.query;
+
+  // Validate the ObjectID for hospital
+  if (!mongoose.Types.ObjectId.isValid(hospitalId)) {
+      return res.status(400).json({ message: 'Invalid Hospital ID format' });
+  }
+
+  // Find users associated with the specified hospital
+  const users = await User.find({
+      hospital: hospitalId,
+      $or: [
+          { name: { $regex: query, $options: 'i' } },
+          // Add other fields if needed
+      ]
+  });
+
+  if (!users.length) {
+      return res.status(404).json({ message: 'No users found for the specified hospital' });
+  }
+
+  res.status(200).json(users);
+});
+
+// Search users by name or other criteria across all hospitals
+const searchUsersAcrossHospitals = asyncHandler(async (req, res) => {
+  const { query } = req.query;
+
+  // Find users across all hospitals
+  const users = await User.find({
+      $or: [
+          { name: { $regex: query, $options: 'i' } },
+          // Add other fields if needed
+      ]
+  });
+
+  if (!users.length) {
+      return res.status(404).json({ message: 'No users found across all hospitals' });
+  }
+
+  res.status(200).json(users);
+});
+
+
+
+module.exports = {
+  getUsersByHospital,
+  getUserInHospital,
+  createUserInHospital,
+  updateUserInHospital,
+  deleteUserInHospital,
+  addMedicationToUserInHospital,
+  removeMedicationFromUserInHospital,
+  getUsersWithMedicationInHospital,
+  searchUsersInHospital,
+  searchUsersAcrossHospitals,
+};
