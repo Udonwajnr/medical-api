@@ -77,5 +77,3 @@ medicationSchema.pre('save', function (next) {
 });
 
 module.exports = mongoose.model("Medication", medicationSchema);
-
-module.exports=mongoose.model("Medication",medicationSchema)

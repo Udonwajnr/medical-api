@@ -2,142 +2,163 @@ const asyncHandler = require("express-async-handler");
 const Medication = require("../model/medication");
 const User = require("../model/user");
 const mongoose = require("mongoose");
+const Hospital = require("../model/hospital");
 
-// Get all medications with populated user and hospital fields
-const getAllMedications = asyncHandler(async (req, res) => {
-    const medications = await Medication.find()
-        .populate("user")
-        .populate("hospital"); // Populate hospital field
+// Get all medications across all hospitals
+const getAllMedicationsAcrossHospitals = asyncHandler(async (req, res) => {
+    const medications = await Medication.find().populate("user").populate("hospital");
     return res.status(200).json(medications);
 });
 
-// Get a single medication by ID with populated user and hospital fields
-const getMedication = asyncHandler(async (req, res) => {
-    const { id } = req.params;
+// Get all medications of a specific hospital
+const getAllMedicationsOfHospital = asyncHandler(async (req, res) => {
+    const { hospitalId } = req.params;
+    const medications = await Medication.find({ hospital: hospitalId }).populate("user").populate("hospital");
+    return res.status(200).json(medications);
+});
 
-    // Validate the ObjectID
+// Get a specific medication by ID within a specific hospital
+const getMedicationOfHospital = asyncHandler(async (req, res) => {
+    const { hospitalId, id } = req.params;
+
     if (!mongoose.Types.ObjectId.isValid(id)) {
         return res.status(400).json({ message: 'Invalid Medication ID format' });
     }
 
-    // Fetch the medication from the database with populated fields
-    const medication = await Medication.findById(id)
-        .populate("user")
-        .populate("hospital");
+    const medication = await Medication.findOne({ _id: id, hospital: hospitalId }).populate("user").populate("hospital");
 
-    // Check if medication exists
     if (!medication) {
-        return res.status(404).json({ message: 'Medication not found' });
+        return res.status(404).json({ message: 'Medication not found in the specified hospital' });
     }
 
-    // Return the Medication
     return res.status(200).json(medication);
 });
 
 // Create a new medication for a specific hospital
-const createMedication = asyncHandler(async (req, res) => {
-    const { nameOfDrugs, dosage, frequency, time, hospital, notes, reminderSent } = req.body;
+const createMedicationForHospital = asyncHandler(async (req, res) => {
+    const { hospitalId } = req.params;
+    const { nameOfDrugs, dosage, frequency, time, notes, reminderSent, expiryDate, price, quantityInStock, barcode } = req.body;
 
     // Validate the ObjectID for hospital
-    if (!mongoose.Types.ObjectId.isValid(hospital)) {
+    if (!mongoose.Types.ObjectId.isValid(hospitalId)) {
         return res.status(400).json({ message: 'Invalid Hospital ID format' });
     }
 
+    // Check if the hospital exists
+    const hospitalDoc = await Hospital.findById(hospitalId);
+    if (!hospitalDoc) {
+        return res.status(404).json({ message: 'Hospital not found' });
+    }
+
     // Create the new medication
-    const medication = new Medication({ nameOfDrugs, dosage, frequency, time, hospital, notes, reminderSent });
+    const medication = new Medication({
+        nameOfDrugs,
+        dosage,
+        frequency,
+        time,
+        hospital: hospitalId,
+        notes,
+        reminderSent,
+        expiryDate,
+        price,
+        quantityInStock,
+        barcode
+    });
+
     await medication.save();
+
+    // Add the medication to the hospital's medication list
+    hospitalDoc.medication.push(medication._id);
+
+    // Save the updated hospital document
+    await hospitalDoc.save();
 
     // Return the newly created Medication
     res.status(201).json(medication);
 });
 
-// Update a medication by ID
-const updateMedication = asyncHandler(async (req, res) => {
-    const { id } = req.params;
+// Update a medication by ID within a specific hospital
+const updateMedicationOfHospital = asyncHandler(async (req, res) => {
+    const { hospitalId, id } = req.params;
 
-    // Validate the ObjectID
     if (!mongoose.Types.ObjectId.isValid(id)) {
         return res.status(400).json({ message: 'Invalid Medication ID format' });
     }
 
-    // Validate the ObjectID for hospital if provided in the update body
     if (req.body.hospital && !mongoose.Types.ObjectId.isValid(req.body.hospital)) {
         return res.status(400).json({ message: 'Invalid Hospital ID format' });
     }
 
-    // Check if the Medication exists
-    const medication = await Medication.findById(id);
+    const medication = await Medication.findOne({ _id: id, hospital: hospitalId });
     if (!medication) {
-        return res.status(404).json({ message: 'Medication not found' });
+        return res.status(404).json({ message: 'Medication not found in the specified hospital' });
     }
 
-    // Update the Medication
     const updatedMedication = await Medication.findByIdAndUpdate(id, req.body, { new: true, runValidators: true })
         .populate("user")
         .populate("hospital");
 
-    // Return the updated Medication
     return res.status(200).json(updatedMedication);
 });
 
-// Delete a medication by ID
-const deleteMedication = asyncHandler(async (req, res) => {
-    const { id } = req.params;
+// Delete a medication by ID within a specific hospital
+const deleteMedicationOfHospital = asyncHandler(async (req, res) => {
+    const { hospitalId, id } = req.params;
 
-    // Validate the ObjectID
     if (!mongoose.Types.ObjectId.isValid(id)) {
         return res.status(400).json({ message: 'Invalid Medication ID format' });
     }
 
-    // Check if the Medication exists
-    const medication = await Medication.findById(id);
+    const medication = await Medication.findOne({ _id: id, hospital: hospitalId });
     if (!medication) {
-        return res.status(404).json({ message: 'Medication not found' });
+        return res.status(404).json({ message: 'Medication not found in the specified hospital' });
     }
 
     await Medication.findByIdAndDelete(id);
-    return res.status(200).json({ msg: `Medication with ID ${id} has been deleted` });
+    return res.status(200).json({ msg: `Medication with ID ${id} has been deleted from hospital ${hospitalId}` });
 });
 
-// Get medications for a specific user
-const getUserMedicationData = asyncHandler(async (req, res) => {
-    const { id } = req.params;
+// Get all medications for a specific user within a specific hospital
+const getUserMedicationDataOfHospital = asyncHandler(async (req, res) => {
+    const { hospitalId, userId } = req.params;
 
-    // Validate the ObjectID
-    if (!mongoose.Types.ObjectId.isValid(id)) {
+    if (!mongoose.Types.ObjectId.isValid(userId)) {
         return res.status(400).json({ message: 'Invalid User ID format' });
     }
 
-    const user = await User.findById(id);
+    const user = await User.findById(userId);
     if (!user) {
         return res.status(404).json({ message: 'User not found' });
     }
 
-    const medications = await Medication.find({ user: id })
-        .populate("hospital"); // Populate hospital field if needed
+    const medications = await Medication.find({ user: userId, hospital: hospitalId }).populate("hospital");
 
     res.status(200).json({ user, medications });
 });
 
-const searchMedications = asyncHandler(async (req, res) => {
-  const { query } = req.query;
+// Search medications by name or barcode within a specific hospital
+const searchMedicationsOfHospital = asyncHandler(async (req, res) => {
+    const { hospitalId } = req.params;
+    const { query } = req.query;
 
-  const medications = await Medication.find({
-      $or: [
-          { nameOfDrugs: { $regex: query, $options: 'i' } },
-          { barcode: { $regex: query, $options: 'i' } },
-      ],
-  });
+    const medications = await Medication.find({
+        hospital: hospitalId,
+        $or: [
+            { nameOfDrugs: { $regex: query, $options: 'i' } },
+            { barcode: { $regex: query, $options: 'i' } },
+        ],
+    });
 
-  res.status(200).json(medications);
+    res.status(200).json(medications);
 });
 
 module.exports = {
-    getAllMedications,
-    getMedication,
-    createMedication,
-    updateMedication,
-    deleteMedication,
-    getUserMedicationData,
-    searchMedications
+    getAllMedicationsAcrossHospitals,
+    getAllMedicationsOfHospital,
+    getMedicationOfHospital,
+    createMedicationForHospital,
+    updateMedicationOfHospital,
+    deleteMedicationOfHospital,
+    getUserMedicationDataOfHospital,
+    searchMedicationsOfHospital,
 };
