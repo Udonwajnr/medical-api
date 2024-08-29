@@ -15,7 +15,6 @@ const generateICSFile = async (userId) => {
 
         // Prepare the events array
         const events = [];
-
         const now = new Date(); // Get current date and time
 
         userMedications.forEach(med => {
@@ -52,7 +51,6 @@ const generateICSFile = async (userId) => {
                         description: `Time to take your ${nameOfDrugs} (${dosage}).`,
                     });
                 }
-
                 // Handle other frequencies if needed
             });
         });
@@ -65,9 +63,15 @@ const generateICSFile = async (userId) => {
                     reject(error);
                 } else {
                     const filePath = path.join(__dirname, 'medication-reminders.ics');
-                    fs.writeFileSync(filePath, value);
-                    console.log('ICS file generated:', filePath);
-                    resolve(filePath);
+                    fs.writeFile(filePath, value, (err) => {
+                        if (err) {
+                            console.error('Error writing ICS file:', err);
+                            reject(err);
+                        } else {
+                            console.log('ICS file generated:', filePath);
+                            resolve(filePath);
+                        }
+                    });
                 }
             });
         });

@@ -1,6 +1,5 @@
 const nodemailer = require('nodemailer');
-const path = require('path');
-const generateICSFile = require('../middleware/generateICSFile');
+const generateICSFile = require('./path-to-your/generateICSFile');
 const User = require('../model/user');
 
 const sendMedicationReminderEmail = async (req, res) => {
@@ -33,10 +32,11 @@ const sendMedicationReminderEmail = async (req, res) => {
         });
 
         const mailOptions = {
-            from: 'umohu67@gmail.com',
+            from: process.env.EMAIL_USER,
             to: user.email,
             subject: 'Your Medication Reminders',
             text: 'Please find your medication reminders attached. Click the link to add them to your calendar.',
+            html: '<p>Please find your medication reminders attached. Click the link to add them to your calendar.</p>',
             attachments: [
                 {
                     filename: 'medication-reminders.ics',
@@ -52,6 +52,12 @@ const sendMedicationReminderEmail = async (req, res) => {
                 return res.status(500).json({ error: 'Failed to send email' });
             } else {
                 console.log('Email sent successfully:', info.response);
+                // Optional: Remove the ICS file after sending the email
+                fs.unlink(icsFilePath, (err) => {
+                    if (err) {
+                        console.error('Error deleting ICS file:', err);
+                    }
+                });
                 return res.status(200).json({ msg: 'Email sent successfully' });
             }
         });
@@ -61,5 +67,4 @@ const sendMedicationReminderEmail = async (req, res) => {
     }
 };
 
-
-module.exports = { sendMedicationReminderEmail };
+module.exports = sendMedicationReminderEmail;

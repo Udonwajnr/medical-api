@@ -3,7 +3,6 @@ const router = express.Router()
 const {getUsersByHospital,getUserInHospital,createUserInHospital,updateUserInHospital,deleteUserInHospital,addMedicationToUserInHospital,removeMedicationFromUserInHospital,getUsersWithMedicationInHospital,searchUsersInHospital,
     searchUsersAcrossHospitals,} = require("../controllers/userController")
 
-
 // Get all users for a specific hospital
 router.get('/hospitals/:hospitalId/users', getUsersByHospital);
 
