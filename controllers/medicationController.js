@@ -129,7 +129,7 @@ const deleteMedicationOfHospital = asyncHandler(async (req, res) => {
     }
 
     await Medication.findByIdAndDelete(id);
-    return res.status(200).json({ msg: `Medication with ID ${id} has been deleted from hospital ${hospitalId}` });
+    return res.status(200).json({ msg: `Medication with ID ${id} has been deleted from hospital ${hospitalId,hospital.name}` });
 });
 
 // Get all medications for a specific user within a specific hospital

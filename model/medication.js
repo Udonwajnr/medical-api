@@ -8,7 +8,6 @@ const medicationSchema = new schema({
     },
     dosage:{
         type:String,
-        enum: ['50 mg', '100 mg', '200 mg'],
         required:true
     },
     frequency: {

@@ -320,16 +320,19 @@ const updateHospital = asyncHandler(async (req, res) => {
 const deleteHospital = asyncHandler(async (req, res) => {
     const { id } = req.params;
 
+    // Find the hospital by ID
     const hospital = await Hospital.findById(id);
 
     if (!hospital) {
         return res.status(404).json({ msg: 'Hospital not found' });
     }
 
-    await hospital.remove();
+    // Delete the hospital
+    await Hospital.deleteOne({ _id: id });
 
     res.status(200).json({ msg: 'Hospital deleted successfully' });
 });
+
 
 
 module.exports={createHospital,

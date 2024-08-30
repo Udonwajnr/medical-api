@@ -1,10 +1,9 @@
 const nodemailer = require('nodemailer');
-const generateICSFile = require('./path-to-your/generateICSFile');
+const generateICSFile = require('../middleware/generateICSFile');
 const User = require('../model/user');
 
 const sendMedicationReminderEmail = async (req, res) => {
     const { userId } = req.body;
-
     if (!userId) {
         return res.status(400).json({ error: 'UserId is required' });
     }
@@ -67,4 +66,4 @@ const sendMedicationReminderEmail = async (req, res) => {
     }
 };
 
-module.exports = sendMedicationReminderEmail;
+module.exports = {sendMedicationReminderEmail};

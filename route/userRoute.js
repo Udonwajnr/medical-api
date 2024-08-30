@@ -26,7 +26,6 @@ router.delete("/hospital/:hospitalId/users/:userId", deleteUserInHospital);
 // This route adds a specific medication identified by 'medicationId' to a user identified by 'userId' in the hospital specified by 'hospitalId'.
 router.post("/hospital/:hospitalId/users/:userId/medication/:medicationId", addMedicationToUserInHospital);
 
-// This route removes the association of a specific medication identified by 'medicationId' from a user identified by 'userId' in the hospital specified by 'hospitalId'.
 router.delete("/hospital/:hospitalId/users/:userId/medication/:medicationId", removeMedicationFromUserInHospital);
 
 // This route retrieves a list of all users associated with a specific medication identified by 'medicationId' within the hospital specified by 'hospitalId'.
