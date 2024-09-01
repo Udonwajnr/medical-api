@@ -6,6 +6,7 @@ const port = process.env.PORT||3000
 const colors = require("colors")
 const calender = require("./controllers/calenderGenerator")
 let cors = require("cors")
+let cookieParser = require("cookie-parser")
 // const email = require("./middleware/email")
 
 app.use(cookieParser());
