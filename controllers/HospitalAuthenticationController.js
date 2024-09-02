@@ -198,11 +198,8 @@ const resetPassword = asyncHandler(async (req, res) => {
             return res.status(400).json({ msg: 'Invalid password' });
         }
 
-        // Hash the new password and save it
-        const salt = await bcrypt.genSalt(10);
-        const hashedPassword = await bcrypt.hash(newPassword, salt);
-
-        hospital.password = hashedPassword;
+        // Set the new password and clear the reset token and expiration
+        hospital.password = newPassword;
         hospital.resetPasswordToken = undefined; // Clear the reset token
         hospital.resetPasswordExpires = undefined; // Clear the expiration time
         await hospital.save();
@@ -213,6 +210,7 @@ const resetPassword = asyncHandler(async (req, res) => {
         return res.status(400).json({ msg: 'Invalid or expired token' });
     }
 });
+
 
 const getAllHospitals = asyncHandler(async (req, res) => {
     const hospitals = await Hospital.find().populate('user').populate('medication');
