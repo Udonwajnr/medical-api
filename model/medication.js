@@ -28,7 +28,7 @@ const medicationSchema = new schema({
     },
     barcode: {
       type: String,
-      unique: true,
+      // unique: true,
     },
     price: {
       type: Number,
