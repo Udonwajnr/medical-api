@@ -54,7 +54,7 @@ const createHospital = asyncHandler(async (req, res) => {
         from: process.env.EMAIL_USER,
         subject: 'Email Verification',
         text: `Please verify your email address by clicking the following link:\n\n
-        http://${req.headers.host}/verify-email/${verificationToken}\n\n
+        http://localhost:3000/verify-email/${verificationToken}\n\n
         This link will expire in 1 hour.\n
         If you did not request this, please ignore this email.\n`,
     };
