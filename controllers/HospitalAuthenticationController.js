@@ -157,7 +157,7 @@ const forgotPassword = asyncHandler(async (req, res) => {
         from: process.env.EMAIL_USER,
         subject: 'Password Reset',
         text: `Please reset your password by clicking the following link:\n\n
-        http://${req.headers.host}/reset-password/${resetToken}\n\n
+        http://localhost:3000/reset-password/${resetToken}\n\n
         This link will expire in 1 hour.\n
         If you did not request this, please ignore this email.\n`,
     };
