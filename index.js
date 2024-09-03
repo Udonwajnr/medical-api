@@ -14,6 +14,7 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 // 
+app.use('/api', require('./route/authenticationTokenRoute.js'));
 app.use("/api/hospital",require("./route/hospitalAuthenticationRoute.js"))
 // 
 app.use('/api/user',require('./route/userRoute'))
