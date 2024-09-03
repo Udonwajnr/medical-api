@@ -128,7 +128,7 @@ const loginHospital = asyncHandler(async (req, res) => {
     res.cookie('refreshToken', refreshToken, {
         httpOnly: false, // Not HTTP-only for testing, visible in browser
         secure: false,   // Not secure for HTTP (local development)
-        sameSite: 'lax', // Adjust sameSite if needed
+        sameSite: 'sameSite', // Adjust sameSite if needed
         maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
     });
     
@@ -144,7 +144,7 @@ const loginHospital = asyncHandler(async (req, res) => {
 
 const refreshAccessToken = asyncHandler(async (req, res) => {
     const refreshToken = req.cookies.refreshToken;
-    console.log(req.cookies)
+    // console.log(req.cookies)
     if (!refreshToken) {
         return res.status(403).json({ msg: 'Refresh token is required' });
     }
