@@ -114,7 +114,7 @@ const loginHospital = asyncHandler(async (req, res) => {
     const accessToken = JWT.sign(
         { id: hospital._id, name: hospital.name, email: hospital.email },
         process.env.JWT_SECRET,
-        { expiresIn: '15m' } // Shorter expiration time for access token
+        { expiresIn: '20' } // Shorter expiration time for access token
     );
 
     // Create a refresh token
