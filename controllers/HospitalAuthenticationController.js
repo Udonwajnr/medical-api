@@ -136,12 +136,14 @@ const loginHospital = asyncHandler(async (req, res) => {
     res.status(200).json({
         msg: 'Login successful',
         accessToken,
+        refreshToken
     });
 });
 
+
 const refreshAccessToken = asyncHandler(async (req, res) => {
     const refreshToken = req.cookies.refreshToken;
-
+    console.log(req.cookies)
     if (!refreshToken) {
         return res.status(403).json({ msg: 'Refresh token is required' });
     }
