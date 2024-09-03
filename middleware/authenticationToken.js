@@ -1,9 +1,9 @@
 const JWT = require('jsonwebtoken');
-const Hospital = require('../model/hospital');
 const asyncHandler = require('express-async-handler');
 
 const authenticateToken = asyncHandler(async (req, res, next) => {
-    const token = req.headers['authorization']?.split(' ')[1]; // Assumes Bearer token
+    const authHeader = req.headers['authorization'];
+    const token = authHeader && authHeader.split(' ')[1]; // Assumes Bearer token
 
     if (!token) {
         return res.status(401).json({ msg: 'No token provided' });
@@ -11,10 +11,13 @@ const authenticateToken = asyncHandler(async (req, res, next) => {
 
     try {
         const decoded = JWT.verify(token, process.env.JWT_SECRET);
-        req.hospitalId = decoded.id;
-        next();
+        req.hospitalId = decoded.id; // Attach decoded ID to request object
+        next(); // Proceed to the next middleware or route handler
     } catch (err) {
-        res.status(403).json({ msg: 'Invalid token' });
+        if (err.name === 'TokenExpiredError') {
+            return res.status(401).json({ msg: 'Token expired' });
+        }
+        return res.status(403).json({ msg: 'Invalid token' });
     }
 });
 

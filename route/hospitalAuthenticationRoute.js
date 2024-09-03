@@ -1,6 +1,7 @@
-const express = require("express")
-const router = express.Router()
-const {createHospital,
+const express = require("express");
+const router = express.Router();
+const {
+    createHospital,
     verifyEmail,
     loginHospital,
     forgotPassword,
@@ -10,19 +11,23 @@ const {createHospital,
     deleteHospital,
     searchHospitals,
     getAllHospitals
-} = require("../controllers/HospitalAuthenticationController")
-// Authentication
+} = require("../controllers/HospitalAuthenticationController");
+const { authenticateToken } = require("../middleware/authenticationToken");
+
+// Authentication routes
 router.post('/register', createHospital);
 router.post('/login', loginHospital);
 router.post('/forgot-password', forgotPassword);
 router.post('/reset-password', resetPassword);
 router.get('/verify-email/:token', verifyEmail);
-// 
-router.get('/search', searchHospitals);
-router.put('/:id', updateHospital);
+
+// Routes that require authentication
+router.get('/search', authenticateToken, searchHospitals);
+router.put('/:id', authenticateToken, updateHospital);
 router.get('/:id', getHospitalById);
-router.delete('/:id', deleteHospital);
+router.delete('/:id', authenticateToken, deleteHospital);
+
+// Public route to get all hospitals (assuming this doesn't need authentication)
 router.get('/', getAllHospitals);
 
-
-module.exports=router
+module.exports = router;

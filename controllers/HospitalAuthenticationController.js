@@ -4,6 +4,7 @@ const nodemailer = require("nodemailer")
 const crypto = require("crypto")
 const JWT = require("jsonwebtoken")
 const bcrypt = require('bcrypt');
+const Medication = require('../model/medication');
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your_jwt_secret_key';
 
@@ -109,18 +110,71 @@ const loginHospital = asyncHandler(async (req, res) => {
         return res.status(400).json({ msg: 'Invalid credentials' });
     }
 
-    // Create a JWT token
-    const token = JWT.sign(
+    // Create an access token
+    const accessToken = JWT.sign(
         { id: hospital._id, name: hospital.name, email: hospital.email },
-        JWT_SECRET,
-        { expiresIn: '1h' } // Token expires in 1 hour
+        process.env.JWT_SECRET,
+        { expiresIn: '15m' } // Shorter expiration time for access token
     );
 
-    // Send response with token
+    // Create a refresh token
+    const refreshToken = JWT.sign(
+        { id: hospital._id, name: hospital.name, email: hospital.email },
+        process.env.REFRESH_TOKEN_SECRET,
+        { expiresIn: '7d' } // Longer expiration for refresh token
+    );
+
+    // Set the refresh token in an HTTP-only cookie
+    res.cookie('refreshToken', refreshToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production', // Set to true in production
+        sameSite: 'strict',
+        maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+    });
+
+    // Send the access token in the response body
     res.status(200).json({
         msg: 'Login successful',
-        token,
+        accessToken,
     });
+});
+
+const refreshAccessToken = asyncHandler(async (req, res) => {
+    const refreshToken = req.cookies.refreshToken;
+
+    if (!refreshToken) {
+        return res.status(403).json({ msg: 'Refresh token is required' });
+    }
+
+    try {
+        // Verify the refresh token
+        const decoded = JWT.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET);
+
+        // Generate a new access token
+        const accessToken = JWT.sign(
+            { id: decoded.id, name: decoded.name, email: decoded.email },
+            process.env.JWT_SECRET,
+            { expiresIn: '15m' }
+        );
+
+        res.status(200).json({
+            msg: 'Token refreshed',
+            accessToken,
+        });
+    } catch (err) {
+        return res.status(403).json({ msg: 'Invalid refresh token' });
+    }
+});
+
+// Logout hospital
+const logoutHospital = asyncHandler(async (req, res) => {
+    res.clearCookie('refreshToken', {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict',
+    });
+
+    res.status(200).json({ msg: 'Logged out successfully' });
 });
 
 const forgotPassword = asyncHandler(async (req, res) => {
@@ -325,10 +379,13 @@ const deleteHospital = asyncHandler(async (req, res) => {
         return res.status(404).json({ msg: 'Hospital not found' });
     }
 
+    // Delete related medications
+    await Medication.deleteMany({ hospital: id }); // Use the `hospital` field to find related medications
+
     // Delete the hospital
     await Hospital.deleteOne({ _id: id });
 
-    res.status(200).json({ msg: 'Hospital deleted successfully' });
+    res.status(200).json({ msg: 'Hospital and related medications deleted successfully' });
 });
 
 
@@ -336,10 +393,13 @@ const deleteHospital = asyncHandler(async (req, res) => {
 module.exports={createHospital,
     verifyEmail,
     loginHospital,
+    refreshAccessToken,
+    logoutHospital,
     forgotPassword,
     resetPassword,
     updateHospital,
     getHospitalById,
     deleteHospital,
     searchHospitals,
-    getAllHospitals}
+    getAllHospitals
+}
