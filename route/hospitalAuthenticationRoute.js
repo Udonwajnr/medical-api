@@ -10,7 +10,9 @@ const {
     getHospitalById,
     deleteHospital,
     searchHospitals,
-    getAllHospitals
+    getAllHospitals,
+    refreshAccessToken,
+    logoutHospital,
 } = require("../controllers/HospitalAuthenticationController");
 const { authenticateToken } = require("../middleware/authenticationToken");
 
@@ -20,7 +22,9 @@ router.post('/login', loginHospital);
 router.post('/forgot-password', forgotPassword);
 router.post('/reset-password', resetPassword);
 router.get('/verify-email/:token', verifyEmail);
-
+// Route for refreshing the access token
+router.post('/refresh-token', refreshAccessToken);
+router.post('/logout', logoutHospital);
 // Routes that require authentication
 router.get('/search', authenticateToken, searchHospitals);
 router.put('/:id', authenticateToken, updateHospital);
