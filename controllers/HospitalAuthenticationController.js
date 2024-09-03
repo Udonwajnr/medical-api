@@ -127,7 +127,7 @@ const loginHospital = asyncHandler(async (req, res) => {
     // Set the refresh token in an HTTP-only cookie
     res.cookie('refreshToken', refreshToken, {
         httpOnly: true,
-        secure: process.env.NODE_ENV === 'production', // Set to true in production
+        secure: true, // Set to true in production
         sameSite: 'strict',
         maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
     });
