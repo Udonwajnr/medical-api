@@ -54,11 +54,32 @@ const createHospital = asyncHandler(async (req, res) => {
         to: hospital.email,
         from: process.env.EMAIL_USER,
         subject: 'Email Verification',
-        text: `Please verify your email address by clicking the following link:\n\n
-        https://medical-inventory-beta.vercel.app/verify-email/${verificationToken}\n\n
-        This link will expire in 1 hour.\n
-        If you did not request this, please ignore this email.\n`,
-    };
+        html: `
+          <div style="font-family: Arial, sans-serif; line-height: 1.6; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f9f9f9; border: 1px solid #e0e0e0; border-radius: 8px;">
+            <h2 style="color: #2c3e50; text-align: center;">Pharma Inventory</h2>
+            <h3 style="color: #34495e;">Verify Your Email Address</h3>
+            <p style="color: #555;">Hi there,</p>
+            <p style="color: #555;">
+              Thank you for registering with Pharma Inventory. To complete your registration, please verify your email address by clicking the link below:
+            </p>
+            <p style="text-align: center;">
+              <a href="https://medical-inventory-beta.vercel.app/verify-email/${verificationToken}" 
+                style="display: inline-block; padding: 10px 20px; font-size: 16px; color: #ffffff; background-color: #3498db; text-decoration: none; border-radius: 5px;">
+                Verify Email Address
+              </a>
+            </p>
+            <p style="color: #555;">
+              This link will expire in <strong>1 hour</strong>. If you did not request this email, please ignore it.
+            </p>
+            <p style="color: #555;">Best regards,<br/>The Pharma Inventory Team</p>
+            <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;">
+            <p style="color: #999; text-align: center; font-size: 12px;">
+              © ${new Date().getFullYear()} Pharma Inventory. All rights reserved.
+            </p>
+          </div>
+        `,
+      };
+      
 
     transporter.sendMail(mailOptions, (err, response) => {
         if (err) {
