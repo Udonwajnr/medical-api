@@ -55,7 +55,7 @@ const createHospital = asyncHandler(async (req, res) => {
         from: process.env.EMAIL_USER,
         subject: 'Email Verification',
         text: `Please verify your email address by clicking the following link:\n\n
-        http://localhost:3000/verify-email/${verificationToken}\n\n
+        https://medical-inventory-beta.vercel.app/verify-email/${verificationToken}\n\n
         This link will expire in 1 hour.\n
         If you did not request this, please ignore this email.\n`,
     };
@@ -212,12 +212,32 @@ const forgotPassword = asyncHandler(async (req, res) => {
     const mailOptions = {
         to: hospital.email,
         from: process.env.EMAIL_USER,
-        subject: 'Password Reset',
-        text: `Please reset your password by clicking the following link:\n\n
-        http://localhost:3000/reset-password/${resetToken}\n\n
-        This link will expire in 1 hour.\n
-        If you did not request this, please ignore this email.\n`,
-    };
+        subject: 'Password Reset Request',
+        html: `
+          <html>
+            <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+              <div style="max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #ddd; border-radius: 8px;">
+                <h2 style="color: #0056b3;">Password Reset Request</h2>
+                <p>Hello,</p>
+                <p>You requested a password reset for your account. Please click the link below to reset your password:</p>
+                <p>
+                  <a href="https://medical-inventory-beta.vercel.app/reset-password/${resetToken}" 
+                     style="display: inline-block; padding: 10px 20px; margin: 10px 0; color: #fff; background-color: #007bff; text-decoration: none; border-radius: 5px;">
+                    Reset Password
+                  </a>
+                </p>
+                <p>This link will expire in 1 hour. If you did not request this, please ignore this email.</p>
+                <p>Thank you,<br>Your Team</p>
+                <hr style="border: 0; border-top: 1px solid #ddd; margin: 20px 0;">
+                <p style="font-size: 0.9em; color: #777;">
+                  If you have any questions or need further assistance, feel free to contact us at <a href="mailto:support@medical-inventory-beta.vercel.app" style="color: #007bff;">support@medical-inventory-beta.vercel.app</a>.
+                </p>
+              </div>
+            </body>
+          </html>
+        `,
+      };
+      
 
     transporter.sendMail(mailOptions, (err) => {
         if (err) {

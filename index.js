@@ -8,10 +8,23 @@ const calender = require("./controllers/calenderGenerator")
 let cors = require("cors")
 let cookieParser = require("cookie-parser")
 
+
+
 const corsOptions = {
-    origin: 'http://localhost:3000',
-    credentials: true
-  };
+  origin: function (origin, callback) {
+    const allowedOrigins = [
+      'http://localhost:3000',
+      'https://medical-inventory-beta.vercel.app'
+    ];
+    if (allowedOrigins.includes(origin) || !origin) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  credentials: true
+};
+
 app.use(cookieParser());
 app.use(cors(corsOptions));
 app.use(express.json());
