@@ -37,7 +37,7 @@ const getMedicationOfHospital = asyncHandler(async (req, res) => {
 // Create a new medication for a specific hospital
 const createMedicationForHospital = asyncHandler(async (req, res) => {
     const { hospitalId } = req.params;
-    const { nameOfDrugs, dosage, frequency, time, notes, reminderSent, expiryDate, price, quantityInStock, barcode } = req.body;
+    const { nameOfDrugs, dosage, frequency, notes, reminderSent, expiryDate, price, quantityInStock, barcode } = req.body;
 
     // Validate the ObjectID for hospital
     if (!mongoose.Types.ObjectId.isValid(hospitalId)) {
@@ -55,7 +55,6 @@ const createMedicationForHospital = asyncHandler(async (req, res) => {
         nameOfDrugs,
         dosage,
         frequency,
-        time,
         hospital: hospitalId,
         notes,
         reminderSent,

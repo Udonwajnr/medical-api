@@ -311,7 +311,7 @@ const resetPassword = asyncHandler(async (req, res) => {
 
 
 const getAllHospitals = asyncHandler(async (req, res) => {
-    const hospitals = await Hospital.find().populate('user').populate('medication');
+    const hospitals = await Hospital.find().populate('users').populate('medication');
 
     res.status(200).json(hospitals);
 });
@@ -320,7 +320,7 @@ const getAllHospitals = asyncHandler(async (req, res) => {
 const getHospitalById = asyncHandler(async (req, res) => {
     const { id } = req.params;
 
-    const hospital = await Hospital.findById(id).populate('user').populate('medication');
+    const hospital = await Hospital.findById(id).populate('users').populate('medication');
 
     if (!hospital) {
         return res.status(404).json({ msg: 'Hospital not found' });

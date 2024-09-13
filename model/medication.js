@@ -12,13 +12,8 @@ const medicationSchema = new schema({
     },
     frequency: {
         type: String,
-        enum: ['daily', 'twice_daily', 'three_times_daily', 'weekly'],
         required: true,
       },
-    time: {
-      type: Date,
-      required: true,
-    },
     notes: {
       type: String,
     },
@@ -55,6 +50,10 @@ const medicationSchema = new schema({
       ref:"Hospital",
       required:true
     }],
+    userSpecificMedicationRegimen: [{
+      type: mongoose.Types.ObjectId,
+      ref: "UserSpecificMedicationRegimen"
+  }],
     reminderSent: {
       type: Boolean,
       default: false,

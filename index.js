@@ -35,6 +35,7 @@ app.use("/api/hospital",require("./route/hospitalAuthenticationRoute.js"))
 // 
 app.use('/api/user',require('./route/userRoute'))
 app.use('/api/medication',require('./route/medicationRoute'))
+app.use('/api/', require('./route/userSpecificMedicationRegimen.js'));
 app.use('/api/email',require('./route/emailReminder'))
 app.listen(port,()=>{
     console.log(`I'm Back`)

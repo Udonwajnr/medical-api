@@ -36,17 +36,20 @@ const HospitalSchema = new mongoose.Schema({
     twitter: String,
     instagram: String,
   },
-  
   verificationToken:{
     type:String,
   },
-  user:[{
+  users:[{
     type:mongoose.Types.ObjectId,
     ref:"User"
     }],
   medication:[{
     type:mongoose.Types.ObjectId,
     ref:"Medication"
+  }],
+  userSpecificMedicationRegimen: [{
+    type: mongoose.Types.ObjectId,
+    ref: "UserSpecificMedicationRegimen"
   }],
   registrationDate: {
     type: Date,

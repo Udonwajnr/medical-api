@@ -37,6 +37,17 @@ const createUserInHospital = asyncHandler(async (req, res) => {
   const { hospitalId } = req.params;
   const { fullName, dateOfBirth, gender, phoneNumber, email, medication } = req.body;
 
+  // Validate the ObjectID for hospital
+  if (!mongoose.Types.ObjectId.isValid(hospitalId)) {
+    return res.status(400).json({ message: 'Invalid Hospital ID format' });
+  }
+
+   // Check if the hospital exists
+   const hospitalDoc = await Hospital.findById(hospitalId);
+   if (!hospitalDoc) {
+       return res.status(404).json({ message: 'Hospital not found' });
+   }
+
   // Create the new user
   const user = new User({
     fullName,
@@ -45,18 +56,18 @@ const createUserInHospital = asyncHandler(async (req, res) => {
     phoneNumber,
     email,
     medication,
-    hospital: [hospitalId],
+    hospital: hospitalId,
   });
 
   await user.save();
 
-  // Update the hospital to include the new user
-  await Hospital.findByIdAndUpdate(
-    hospitalId,
-    { $addToSet: { users: user._id } },
-    { new: true }
-  );
 
+  hospitalDoc.users.push(user._id);
+
+    // Save the updated hospital document
+  await hospitalDoc.save();
+
+    // return the newly created user
   res.status(201).json(user);
 });
 
@@ -101,15 +112,14 @@ const deleteUserInHospital = asyncHandler(async (req, res) => {
   }
 
   // Delete the user
+
+  const hospital = await Hospital.findById(hospitalId);
+  if (hospital) {
+      hospital.users.pull(user._id);
+      await hospital.save();
+  }
+
   await User.findByIdAndDelete(userId);
-
-  // Update the hospital to remove the deleted user
-  await Hospital.findByIdAndUpdate(
-    hospitalId,
-    { $pull: { users: userId } },
-    { new: true }
-  );
-
   return res.status(200).json({ msg: `User with ID ${userId} has been deleted from hospital ${hospitalId}` });
 });
 

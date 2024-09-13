@@ -1,5 +1,6 @@
 const mongoose = require("mongoose")
-
+const Medication = require('../model/medication');
+const hospital = require("../model/hospital");
 const connectDB =async()=>{
     try{
         const databaseName = "medicalReminder";
@@ -15,4 +16,19 @@ const connectDB =async()=>{
     }
 }
 
+// // Remove a field from a document
+// async function removeField() {
+//     try {
+//       await hospital.updateOne(
+//         {}, // Filter to find the document
+//         { $unset: { user: "" } } // Unset the field 'age'
+//       );
+//       console.log("Field removed successfully.");
+//       mongoose.connection.close();
+//     } catch (error) {
+//       console.error("Error removing field:", error);
+//     }
+//   }
+
+//   removeField()
 module.exports = connectDB
