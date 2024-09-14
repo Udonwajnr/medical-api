@@ -7,23 +7,27 @@ const medicationSchema = new schema({
     required: true,
   },
   dosage: {
-    type: String, // e.g., "500 mg", "10 mL"
+    type: String,
     required: true,
   },
   dosageForm: {
-    type: String, // e.g., "tablet", "syrup", "injection"
+    type: String,
+    required: true,
+  },
+  dosageAmount: {
+    type: Number,  // New field for number of tablets/doses per intake
     required: true,
   },
   frequency: {
-    type: String, // e.g., "twice a day", "every 8 hours"
+    type: String,
     required: true,
   },
   duration: {
-    type: String, // e.g., "7 days", "2 weeks"
+    type: String,
     required: true,
   },
   numberOfUnits: {
-    type: Number, // e.g., "30 tablets", "100 mL"
+    type: Number,
     required: true,
   },
   notes: {
@@ -35,7 +39,6 @@ const medicationSchema = new schema({
   },
   barcode: {
     type: String,
-    // unique: true, // Uncomment if barcodes should be unique
   },
   price: {
     type: Number,
@@ -76,7 +79,6 @@ const medicationSchema = new schema({
   },
 });
 
-// Middleware to update `inStock` based on `quantityInStock`
 medicationSchema.pre('save', function (next) {
   if (this.quantityInStock === 0) {
     this.inStock = false;

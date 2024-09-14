@@ -40,16 +40,17 @@ const createMedicationForHospital = asyncHandler(async (req, res) => {
     const { 
         nameOfDrugs, 
         dosage, 
-        dosageForm,     // Added field
+        dosageForm, // New field
+        dosageAmount, // New field
         frequency, 
-        duration,       // Added field
-        numberOfUnits,  // Added field
+        duration, // New field
         notes, 
         reminderSent, 
         expiryDate, 
         price, 
         quantityInStock, 
-        barcode 
+        barcode,
+        numberOfUnits // New field
     } = req.body;
 
     // Validate the ObjectID for hospital
@@ -67,20 +68,20 @@ const createMedicationForHospital = asyncHandler(async (req, res) => {
     const medication = new Medication({
         nameOfDrugs,
         dosage,
-        dosageForm,        // Added field
+        dosageForm, // New field
+        dosageAmount, // New field
         frequency,
-        duration,          // Added field
-        numberOfUnits,     // Added field
-        hospital: hospitalId,
+        duration, // New field
         notes,
         reminderSent,
         expiryDate,
         price,
         quantityInStock,
-        barcode
+        barcode,
+        numberOfUnits, // New field
+        hospital: hospitalId
     });
 
-    // Save the new medication document
     await medication.save();
 
     // Add the medication to the hospital's medication list
