@@ -15,17 +15,31 @@ const medicationSchema = new schema({
     required: true,
   },
   dosageAmount: {
-    type: Number,  // New field for number of tablets/doses per intake
+    type: Number,  // Number of tablets/doses per intake
     required: true,
   },
   frequency: {
-    type: Number,
-    required: true,
+    value: { 
+      type: Number,
+      required: true,
+    },
+    unit: { 
+      type: String,
+      enum: ['hours', 'days'], // Adjust the units as needed
+      required: true,
+    },
   },
   duration: {
-    value: { type: Number, required: true },   // e.g., 7 or 4
-    unit: { type: String, enum: ['days', 'weeks'], required: true },  // e.g., 'days' or 'weeks'
-  },  
+    value: { 
+      type: Number, 
+      required: true, // e.g., 7 or 4
+    },
+    unit: { 
+      type: String, 
+      enum: ['days', 'weeks'], 
+      required: true, // e.g., 'days' or 'weeks'
+    },
+  },
   numberOfUnits: {
     type: Number,
     required: true,
