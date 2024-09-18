@@ -19,13 +19,13 @@ const medicationSchema = new schema({
     required: true,
   },
   frequency: {
-    type: String,
+    type: Number,
     required: true,
   },
   duration: {
-    type: String,
-    required: true,
-  },
+    value: { type: Number, required: true },   // e.g., 7 or 4
+    unit: { type: String, enum: ['days', 'weeks'], required: true },  // e.g., 'days' or 'weeks'
+  },  
   numberOfUnits: {
     type: Number,
     required: true,

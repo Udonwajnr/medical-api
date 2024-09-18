@@ -43,7 +43,7 @@ const createMedicationForHospital = asyncHandler(async (req, res) => {
         dosageForm, // New field
         dosageAmount, // New field
         frequency, 
-        duration, // New field
+        duration, // New field { value, unit }
         notes, 
         reminderSent, 
         expiryDate, 
@@ -71,7 +71,7 @@ const createMedicationForHospital = asyncHandler(async (req, res) => {
         dosageForm, // New field
         dosageAmount, // New field
         frequency,
-        duration, // New field
+        duration, // New field: { value, unit }
         notes,
         reminderSent,
         expiryDate,
@@ -82,6 +82,7 @@ const createMedicationForHospital = asyncHandler(async (req, res) => {
         hospital: hospitalId
     });
 
+    // Save the medication
     await medication.save();
 
     // Add the medication to the hospital's medication list

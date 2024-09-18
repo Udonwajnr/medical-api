@@ -65,7 +65,7 @@ const HospitalSchema = new mongoose.Schema({
     type: Date,
     default: Date.now,
   },
-});
+}, { timestamps: true });
 
 // Hash password before saving the hospital
 HospitalSchema.pre('save', async function (next) {

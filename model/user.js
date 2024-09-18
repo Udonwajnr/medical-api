@@ -9,7 +9,7 @@ const userSchema = new schema({
     },
     dateOfBirth:{
         type:Date,
-        required:true
+        // required:true
     },
     gender:{
         type:String,
@@ -17,7 +17,7 @@ const userSchema = new schema({
     },
     phoneNumber:{
         type:String,
-        required:true
+        // required:true
     },
     email:{
         type:String,
@@ -34,6 +34,6 @@ const userSchema = new schema({
         type: mongoose.Types.ObjectId,
         ref: "UserSpecificMedicationRegimen"
     }],
-})
+},{timestamps: true })
 
 module.exports = mongoose.model("User", userSchema)
