@@ -103,9 +103,9 @@ const updateMedicationOfHospital = asyncHandler(async (req, res) => {
         return res.status(400).json({ message: 'Invalid Medication ID format' });
     }
 
-    if (req.body.hospital && !mongoose.Types.ObjectId.isValid(req.body.hospital)) {
-        return res.status(400).json({ message: 'Invalid Hospital ID format' });
-    }
+    // if (req.body.hospital && !mongoose.Types.ObjectId.isValid(req.body.hospital)) {
+    //     return res.status(400).json({ message: 'Invalid Hospital ID format' });
+    // }
 
     const medication = await Medication.findOne({ _id: id, hospital: hospitalId });
     if (!medication) {
