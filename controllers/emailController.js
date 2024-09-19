@@ -22,44 +22,44 @@ const sendMedicationReminderEmail = async (req, res) => {
             return res.status(500).json({ error: 'Failed to generate ICS file' });
         }
 
-        const transporter = nodemailer.createTransport({
-            service: 'Gmail',
-            auth: {
-                user: process.env.EMAIL_USER,
-                pass: process.env.EMAIL_PASSCODE,
-            },
-        });
+        // const transporter = nodemailer.createTransport({
+        //     service: 'Gmail',
+        //     auth: {
+        //         user: process.env.EMAIL_USER,
+        //         pass: process.env.EMAIL_PASSCODE,
+        //     },
+        // });
 
-        const mailOptions = {
-            from: process.env.EMAIL_USER,
-            to: user.email,
-            subject: 'Your Medication Reminders',
-            text: 'Please find your medication reminders attached. Click the link to add them to your calendar.',
-            html: '<p>Please find your medication reminders attached. Click the link to add them to your calendar.</p>',
-            attachments: [
-                {
-                    filename: 'medication-reminders.ics',
-                    path: icsFilePath,
-                    contentType: 'text/calendar',
-                },
-            ],
-        };
+        // const mailOptions = {
+        //     from: process.env.EMAIL_USER,
+        //     to: user.email,
+        //     subject: 'Your Medication Reminders',
+        //     text: 'Please find your medication reminders attached. Click the link to add them to your calendar.',
+        //     html: '<p>Please find your medication reminders attached. Click the link to add them to your calendar.</p>',
+        //     attachments: [
+        //         {
+        //             filename: 'medication-reminders.ics',
+        //             path: icsFilePath,
+        //             contentType: 'text/calendar',
+        //         },
+        //     ],
+        // };
 
-        transporter.sendMail(mailOptions, (error, info) => {
-            if (error) {
-                console.error('Error sending email:', error);
-                return res.status(500).json({ error: 'Failed to send email' });
-            } else {
-                console.log('Email sent successfully:', info.response);
-                // Optional: Remove the ICS file after sending the email
-                fs.unlink(icsFilePath, (err) => {
-                    if (err) {
-                        console.error('Error deleting ICS file:', err);
-                    }
-                });
-                return res.status(200).json({ msg: 'Email sent successfully' });
-            }
-        });
+        // transporter.sendMail(mailOptions, (error, info) => {
+        //     if (error) {
+        //         console.error('Error sending email:', error);
+        //         return res.status(500).json({ error: 'Failed to send email' });
+        //     } else {
+        //         console.log('Email sent successfully:', info.response);
+        //         // Optional: Remove the ICS file after sending the email
+        //         fs.unlink(icsFilePath, (err) => {
+        //             if (err) {
+        //                 console.error('Error deleting ICS file:', err);
+        //             }
+        //         });
+        //         return res.status(200).json({ msg: 'Email sent successfully' });
+        //     }
+        // });
     } catch (error) {
         console.error('Error sending email:', error);
         return res.status(500).json({ error: 'Internal Server Error' });
