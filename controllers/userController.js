@@ -7,7 +7,7 @@ const mongoose = require("mongoose");
 // Get all users for a specific hospital
 const getUsersByHospital = asyncHandler(async (req, res) => {
   const { hospitalId } = req.params;
-  const users = await User.find({ hospital: hospitalId }).populate("medication");
+  const users = await User.find({ hospital: hospitalId }).populate("medication").populate("purchases");
   return res.status(200).json(users);
 });
 
@@ -21,7 +21,7 @@ const getUserInHospital = asyncHandler(async (req, res) => {
   }
 
   // Fetch the user within the specified hospital
-  const user = await User.findOne({ _id: userId, hospital: hospitalId }).populate("medication");
+  const user = await User.findOne({ _id: userId, hospital: hospitalId }).populate("medication").populate("purchases");
 
   // Check if user exists
   if (!user) {

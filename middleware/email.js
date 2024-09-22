@@ -12,7 +12,7 @@ const transporter = nodemailer.createTransport({
     
   });
 
-  const filePath = path.join("", 'medication-reminders.ics');
+  const fileath = path.join("", 'medication-reminders.ics');
 
   const mailOptions = {
     from: 'umohu67@gmail.com',

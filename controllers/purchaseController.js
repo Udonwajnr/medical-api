@@ -1,62 +1,61 @@
 const asyncHandler = require("express-async-handler");
-const Medication = require("../model/medication");
 const User = require("../model/user");
-const mongoose = require("mongoose");
-const Hospital = require("../model/hospital");
 const Purchase = require("../model/purchase");
-// const sendEmailReminder = require("../middleware/email")
+const sendEmailWithICS = require("../middleware/calenderEmail")
+const generateICSFile = require("../middleware/generateICSFile")
 
-const purchaseMedication = async (req, res) => {
-    try {
-        const { userId, medications, hospitalId } = req.body;
+const purchaseMedication = asyncHandler(async (req, res) => {
+    const { userId, medications, hospitalId } = req.body;
 
-        // Validate input
-        if (!userId || !hospitalId || !medications || !Array.isArray(medications)) {
-            return res.status(400).json({ message: 'Invalid input data.' });
-        }
+    // Create a new purchase
+    const purchase = new Purchase({
+        user: userId,
+        medications,
+        hospital: hospitalId,
+    });
 
-        // Validate user
-        const user = await User.findById(userId);
-        if (!user) {
-            return res.status(400).json({ message: 'Invalid user.' });
-        }
+    // Save the purchase
+    await purchase.save();
 
-        // Ensure medications is an array of objects with medication and quantity
-        const medicationObjects = medications.map(med => ({
-            medication: new mongoose.Types.ObjectId(med.medication), // convert to ObjectId without 'new'
-            quantity: med.quantity || 1 // set default quantity if not provided
-        }));
-        
-
-        // Validate hospital
-        const hospital = await Hospital.findById(hospitalId);
-        if (!hospital) {
-            return res.status(400).json({ message: 'Invalid hospital.' });
-        }
-
-        // Create a new purchase
-        const purchase = new Purchase({
-            user: userId,
-            medications: medicationObjects, // Pass the array of medication objects
-            hospital: hospitalId
-        });
-
-        // Save the purchase
-        await purchase.save();
-
-        // Add the purchase to user's purchase history and save user document
-        user.purchases.push(purchase._id);
-        await user.save(); // Don't forget to save the updated user
-
-        // Optionally, you can send an email reminder
-        // await sendEmailReminder(user, medicationObjects);
-
-        return res.status(201).json({ message: 'Purchase successful and email sent!' });
-    } catch (error) {
-        console.error('Error processing purchase:', error);
-        return res.status(500).json({ message: 'Server error. Could not complete purchase.' });
+    // Find the user to update their purchase history
+    const user = await User.findById(userId);
+    if (!user) {
+        return res.status(404).json({ message: 'User not found' });
     }
-};
+
+    // Check if this purchase contains medications the user has bought before
+    // let emailToSend = false;
+    // medications.forEach(med => {
+    //     const isExisting = user.purchaseHistory.some(p => p.medication.toString() === med.medication.toString());
+    //     if (!isExisting) {
+    //         emailToSend = true; // Set flag to send email for new medication
+    //     }
+    // });
+
+    // Add the purchase to the user's history
+    user.purchases.push(purchase._id);
+    user.purchaseHistory.push(...medications.map(med => ({
+        medication: med.medication,
+        quantity: med.quantity,
+        date: Date.now(),
+    })));
+
+    await user.save();
+
+    // Send email if it's a new medication and the user has an email address
+    if (user.email) {  // Check if user has an email
+        // Generate the ICS file for the user
+        const icsFilePath = await generateICSFile(purchase._id);
+
+        if (icsFilePath) {
+            // Send the email with ICS attachment
+            await sendEmailWithICS(user.email, icsFilePath, medications);
+        }
+    }
+
+    res.status(201).json(purchase);
+});
+
 
 const getAllPurchasesFromHospital = asyncHandler(async (req, res) => {
     const { hospitalId } = req.params;

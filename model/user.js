@@ -45,7 +45,12 @@ const userSchema = new schema({
     purchases: [{
         type: mongoose.Types.ObjectId,
         ref: "Purchase"
-    }]
+    }],
+    purchaseHistory: [{
+        medication: { type: mongoose.Types.ObjectId, ref: "Medication" },
+        quantity: { type: Number, default: 1 },
+        date: { type: Date, default: Date.now }
+      }]
 }, { timestamps: true });
 
 module.exports = mongoose.model("User", userSchema);

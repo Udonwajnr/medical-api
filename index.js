@@ -7,7 +7,6 @@ const colors = require("colors")
 const calender = require("./controllers/calenderGenerator")
 let cors = require("cors")
 let cookieParser = require("cookie-parser")
-const {purchaseMedication} = require('./controllers/purchaseController.js')
 
 
 const corsOptions = {
@@ -49,7 +48,6 @@ app.use('/api/', require('./route/userSpecificMedicationRegimen.js'));
 //     }
 // });
 
-app.use('/api/email',require('./route/emailReminder'))
 app.listen(port,()=>{
     console.log(`I'm Back`)
 })

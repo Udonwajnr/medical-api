@@ -1,60 +1,95 @@
 const ics = require('ics');
 const fs = require('fs');
 const path = require('path');
-const Medication = require('../model/medication');
+const Purchase = require('../model/purchase'); // Adjust path if necessary
 
-const generateICSFile = async (userId) => {
+const generateICSFile = async (purchaseId) => {
     try {
-        // Fetch user medications from the database
-        const userMedications = await Medication.one({ user: userId }).populate('hospital');
-        console.log(userMedications)
-        if (userMedications) {
-            console.log('No medications found for user.');
+        // Fetch the specific purchase from the Purchase model
+        const purchase = await Purchase.findById(purchaseId).populate('medications.medication');
+
+        if (!purchase) {
+            console.log('No purchase found for the given ID.');
             return null;
         }
 
         // Prepare the events array
         const events = [];
-        const now = new Date(); // Get current date and time
+        const now = new Date();
 
-        userMedications.forEach(med => {
-            const { nameOfDrugs, dosage, frequency, duration, createdAt } = med;
-            const days = Array.from({ length: duration.value }, (_, i) => i); // Generate reminders for the duration of medication
+        // Loop through each medication in the current purchase
+        purchase.medications.forEach(purchaseMed => {
+            const medication = purchaseMed.medication; // Get the medication object
+            const { nameOfDrugs, dosage, frequency, duration } = medication;
 
-            days.forEach(dayOffset => {
-                const start = new Date(createdAt);
-                start.setDate(start.getDate() + dayOffset); // Add days based on the offset
+            const start = new Date(purchase.createdAt); // When the purchase was made
+            const daysOrWeeks = Array.from({ length: duration.value }, (_, i) => i); // Generate reminders for each day/week
 
-                // Adjust to present if in the past
-                if (start < now) {
-                    start.setTime(now.getTime());
-                    start.setDate(start.getDate() + dayOffset);
+            daysOrWeeks.forEach(offset => {
+                let eventStart = new Date(start);
+
+                // Adjust based on duration (days or weeks)
+                if (duration.unit === 'days') {
+                    eventStart.setDate(eventStart.getDate() + offset);
+                } else if (duration.unit === 'weeks') {
+                    eventStart.setDate(eventStart.getDate() + (offset * 7)); // Move by 7 days for each week
                 }
 
-                const end = new Date(start);
-                end.setMinutes(end.getMinutes() + 30); // Adjust the duration as needed
+                // Ensure event starts in the future if needed
+                if (eventStart < now) {
+                    eventStart.setDate(now.getDate() + offset); // Adjust to start from today if the date is in the past
+                }
 
-                // Handle medication reminders based on frequency
-                if (frequency.unit === 'days' && frequency.value === 1) {
-                    // Daily reminder
+                // Set end date for the reminder (e.g., reminder duration of 30 minutes)
+                const eventEnd = new Date(eventStart);
+                eventEnd.setMinutes(eventEnd.getMinutes() + 30);
+
+                // Handle frequency of medication (e.g., daily, hourly, multiple times a day)
+                if (frequency.unit === 'days') {
+                    // Medication taken once a day
                     events.push({
-                        start: [start.getFullYear(), start.getMonth() + 1, start.getDate(), 9, 0], // 9 AM
-                        end: [end.getFullYear(), end.getMonth() + 1, end.getDate(), 9, 30],
+                        start: [eventStart.getFullYear(), eventStart.getMonth() + 1, eventStart.getDate(), 9, 0], // 9 AM
+                        end: [eventEnd.getFullYear(), eventEnd.getMonth() + 1, eventEnd.getDate(), 9, 30],
                         title: `Morning ${nameOfDrugs} (${dosage}) Reminder`,
                         description: `Time to take your ${nameOfDrugs} (${dosage}).`,
                     });
 
-                    // Evening reminder (if dosage is twice a day)
-                    if (med.dosageAmount === 2) {
+                    // If medication should be taken more than once a day
+                    const dailyIntervals = 24 / frequency.value;
+                    for (let i = 1; i < dailyIntervals; i++) {
+                        const intervalHours = i * (24 / dailyIntervals); // Evenly distribute reminders over 24 hours
+                        const intervalEventStart = new Date(eventStart);
+                        const intervalEventEnd = new Date(eventEnd);
+                        intervalEventStart.setHours(9 + intervalHours); // Start at 9 AM and add intervals
+                        intervalEventEnd.setHours(9 + intervalHours);
+
                         events.push({
-                            start: [start.getFullYear(), start.getMonth() + 1, start.getDate(), 18, 0], // 6 PM
-                            end: [end.getFullYear(), end.getMonth() + 1, end.getDate(), 18, 30],
-                            title: `Evening ${nameOfDrugs} (${dosage}) Reminder`,
+                            start: [intervalEventStart.getFullYear(), intervalEventStart.getMonth() + 1, intervalEventStart.getDate(), intervalEventStart.getHours(), 0],
+                            end: [intervalEventEnd.getFullYear(), intervalEventEnd.getMonth() + 1, intervalEventEnd.getDate(), intervalEventEnd.getHours(), 30],
+                            title: `${nameOfDrugs} (${dosage}) Reminder`,
+                            description: `Time to take your ${nameOfDrugs} (${dosage}).`,
+                        });
+                    }
+                } else if (frequency.unit === 'hours') {
+                    // Medication taken every X hours
+                    const intervalHours = frequency.value;
+                    const dailyIntervals = 24 / intervalHours; // Calculate how many times per day
+
+                    for (let i = 0; i < dailyIntervals; i++) {
+                        const eventHour = 9 + (i * intervalHours); // Start at 9 AM and repeat every X hours
+                        const intervalEventStart = new Date(eventStart);
+                        const intervalEventEnd = new Date(eventEnd);
+                        intervalEventStart.setHours(eventHour);
+                        intervalEventEnd.setHours(eventHour);
+
+                        events.push({
+                            start: [intervalEventStart.getFullYear(), intervalEventStart.getMonth() + 1, intervalEventStart.getDate(), intervalEventStart.getHours(), 0],
+                            end: [intervalEventEnd.getFullYear(), intervalEventEnd.getMonth() + 1, intervalEventEnd.getDate(), intervalEventEnd.getHours(), 30],
+                            title: `${nameOfDrugs} (${dosage}) Reminder`,
                             description: `Time to take your ${nameOfDrugs} (${dosage}).`,
                         });
                     }
                 }
-                // Handle other frequencies if needed
             });
         });
 
@@ -78,8 +113,9 @@ const generateICSFile = async (userId) => {
                 }
             });
         });
+
     } catch (error) {
-        console.error('Error fetching medication data:', error);
+        console.error('Error fetching purchase data:', error);
         return null;
     }
 };
