@@ -35,7 +35,7 @@ const getUserInHospital = asyncHandler(async (req, res) => {
 // Create a new user for a specific hospital
 const createUserInHospital = asyncHandler(async (req, res) => {
   const { hospitalId } = req.params;
-  const { fullName, dateOfBirth, gender, phoneNumber, email, medication } = req.body; // Note: medications instead of medication
+  const { fullName, dateOfBirth, gender, phoneNumber, email, medication } = req.body;
 
   // Validate the ObjectID for hospital
   if (!mongoose.Types.ObjectId.isValid(hospitalId)) {
@@ -48,11 +48,20 @@ const createUserInHospital = asyncHandler(async (req, res) => {
     return res.status(404).json({ message: 'Hospital not found' });
   }
 
-  // Validate that medications is an array and has the correct structure
-  const medicationObjects = medication.map(med => ({
-    medication: med.medication, // Should be ObjectId
-    quantity: med.quantity || 1 // Default quantity to 1 if not provided
-  }));
+  // Validate that medication is an array and has the correct structure
+  if (!Array.isArray(medication)) {
+    return res.status(400).json({ message: 'Medication must be an array' });
+  }
+
+  const medicationObjects = medication.map(med => {
+    if (!med.medication || !mongoose.Types.ObjectId.isValid(med.medication)) {
+      throw new Error('Invalid medication ID');
+    }
+    return {
+      medication: med.medication, // Should be ObjectId
+      quantity: med.quantity || 1 // Default quantity to 1 if not provided
+    };
+  });
 
   // Create the new user
   const user = new User({
@@ -61,22 +70,28 @@ const createUserInHospital = asyncHandler(async (req, res) => {
     gender,
     phoneNumber,
     email,
-    medication: medicationObjects, // Pass medication objects with medication and quantity
-    hospital: [hospitalId] // Since it's an array, ensure it's passed as an array
+    medication: medicationObjects,
+    hospital: [hospitalId]
   });
 
-  // Save the new user to the database
-  await user.save();
+  try {
+    // Save the new user to the database
+    await user.save();
 
-  // Add the user to the hospital's users list
-  hospitalDoc.users.push(user._id);
+    // Add the user to the hospital's users list
+    hospitalDoc.users.push(user._id);
 
-  // Save the updated hospital document
-  await hospitalDoc.save();
+    // Save the updated hospital document
+    await hospitalDoc.save();
 
-  // Return the newly created user
-  res.status(201).json(user);
+    // Return the newly created user
+    res.status(201).json(user);
+  } catch (error) {
+    console.error('Error saving user:', error);
+    res.status(500).json({ message: 'Failed to create user' });
+  }
 });
+
 
 
 // Update a user in a specific hospital
