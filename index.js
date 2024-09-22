@@ -50,6 +50,7 @@ app.use('/api/', require('./route/userSpecificMedicationRegimen.js'));
 
 app.listen(port,()=>{
     console.log(`I'm Back`)
+    console.log( new Date())
 })
 
 

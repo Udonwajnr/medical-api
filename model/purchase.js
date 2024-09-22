@@ -17,7 +17,12 @@ const purchaseSchema = new mongoose.Schema({
             default: 1, // Default value of 1 for quantity
             required: true, // Quantity is required
             min: [1, 'Quantity must be at least 1'] // Ensure quantity is at least 1
-        }
+        },
+        startTime: {
+            type: Date,
+            default: Date.now, // Set default value to the current date and time
+            required: true, // Ensure start time is provided
+        },
     }],
     hospital: {
         type: mongoose.Types.ObjectId,

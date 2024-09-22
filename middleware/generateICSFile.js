@@ -15,42 +15,43 @@ const generateICSFile = async (purchaseId) => {
 
         // Prepare the events array
         const events = [];
-        const now = new Date();
 
-        // Loop through each medication in the current purchase
+        // Inside your loop for each medication
         purchase.medications.forEach(purchaseMed => {
             const medication = purchaseMed.medication; // Get the medication object
             const { nameOfDrugs, dosage, frequency, duration } = medication;
 
-            const start = new Date(purchase.createdAt); // When the purchase was made
             const daysOrWeeks = Array.from({ length: duration.value }, (_, i) => i); // Generate reminders for each day/week
 
-            daysOrWeeks.forEach(offset => {
-                let eventStart = new Date(start);
+            // Use the purchase medication's startTime for the first event
+            let eventStart = purchaseMed.startTime ? new Date(purchaseMed.startTime) : new Date(); 
+            let eventEnd = new Date(eventStart);
+            eventEnd.setMinutes(eventEnd.getMinutes() + 30); // Set duration for the event
 
+            daysOrWeeks.forEach(offset => {
                 // Adjust based on duration (days or weeks)
                 if (duration.unit === 'days') {
                     eventStart.setDate(eventStart.getDate() + offset);
+                    eventEnd.setDate(eventEnd.getDate() + offset);
                 } else if (duration.unit === 'weeks') {
                     eventStart.setDate(eventStart.getDate() + (offset * 7)); // Move by 7 days for each week
+                    eventEnd.setDate(eventEnd.getDate() + (offset * 7));
                 }
 
                 // Ensure event starts in the future if needed
-                if (eventStart < now) {
-                    eventStart.setDate(now.getDate() + offset); // Adjust to start from today if the date is in the past
+                if (eventStart < new Date()) {
+                    eventStart = new Date(); // Start from now if the event is in the past
+                    eventEnd = new Date(eventStart);
+                    eventEnd.setMinutes(eventEnd.getMinutes() + 30);
                 }
-
-                // Set end date for the reminder (e.g., reminder duration of 30 minutes)
-                const eventEnd = new Date(eventStart);
-                eventEnd.setMinutes(eventEnd.getMinutes() + 30);
 
                 // Handle frequency of medication (e.g., daily, hourly, multiple times a day)
                 if (frequency.unit === 'days') {
                     // Medication taken once a day
                     events.push({
-                        start: [eventStart.getFullYear(), eventStart.getMonth() + 1, eventStart.getDate(), 9, 0], // 9 AM
-                        end: [eventEnd.getFullYear(), eventEnd.getMonth() + 1, eventEnd.getDate(), 9, 30],
-                        title: `Morning ${nameOfDrugs} (${dosage}) Reminder`,
+                        start: [eventStart.getFullYear(), eventStart.getMonth() + 1, eventStart.getDate(), eventStart.getHours(), eventStart.getMinutes()],
+                        end: [eventEnd.getFullYear(), eventEnd.getMonth() + 1, eventEnd.getDate(), eventEnd.getHours(), eventEnd.getMinutes()],
+                        title: `${nameOfDrugs} (${dosage}) Reminder`,
                         description: `Time to take your ${nameOfDrugs} (${dosage}).`,
                     });
 
@@ -60,12 +61,12 @@ const generateICSFile = async (purchaseId) => {
                         const intervalHours = i * (24 / dailyIntervals); // Evenly distribute reminders over 24 hours
                         const intervalEventStart = new Date(eventStart);
                         const intervalEventEnd = new Date(eventEnd);
-                        intervalEventStart.setHours(9 + intervalHours); // Start at 9 AM and add intervals
-                        intervalEventEnd.setHours(9 + intervalHours);
+                        intervalEventStart.setHours(eventStart.getHours() + intervalHours); // Start from now and add intervals
+                        intervalEventEnd.setHours(eventEnd.getHours() + intervalHours);
 
                         events.push({
-                            start: [intervalEventStart.getFullYear(), intervalEventStart.getMonth() + 1, intervalEventStart.getDate(), intervalEventStart.getHours(), 0],
-                            end: [intervalEventEnd.getFullYear(), intervalEventEnd.getMonth() + 1, intervalEventEnd.getDate(), intervalEventEnd.getHours(), 30],
+                            start: [intervalEventStart.getFullYear(), intervalEventStart.getMonth() + 1, intervalEventStart.getDate(), intervalEventStart.getHours(), intervalEventStart.getMinutes()],
+                            end: [intervalEventEnd.getFullYear(), intervalEventEnd.getMonth() + 1, intervalEventEnd.getDate(), intervalEventEnd.getHours(), intervalEventEnd.getMinutes()],
                             title: `${nameOfDrugs} (${dosage}) Reminder`,
                             description: `Time to take your ${nameOfDrugs} (${dosage}).`,
                         });
@@ -76,15 +77,14 @@ const generateICSFile = async (purchaseId) => {
                     const dailyIntervals = 24 / intervalHours; // Calculate how many times per day
 
                     for (let i = 0; i < dailyIntervals; i++) {
-                        const eventHour = 9 + (i * intervalHours); // Start at 9 AM and repeat every X hours
                         const intervalEventStart = new Date(eventStart);
                         const intervalEventEnd = new Date(eventEnd);
-                        intervalEventStart.setHours(eventHour);
-                        intervalEventEnd.setHours(eventHour);
+                        intervalEventStart.setHours(eventStart.getHours() + (i * intervalHours)); // Repeat every X hours
+                        intervalEventEnd.setHours(eventEnd.getHours() + (i * intervalHours));
 
                         events.push({
-                            start: [intervalEventStart.getFullYear(), intervalEventStart.getMonth() + 1, intervalEventStart.getDate(), intervalEventStart.getHours(), 0],
-                            end: [intervalEventEnd.getFullYear(), intervalEventEnd.getMonth() + 1, intervalEventEnd.getDate(), intervalEventEnd.getHours(), 30],
+                            start: [intervalEventStart.getFullYear(), intervalEventStart.getMonth() + 1, intervalEventStart.getDate(), intervalEventStart.getHours(), intervalEventStart.getMinutes()],
+                            end: [intervalEventEnd.getFullYear(), intervalEventEnd.getMonth() + 1, intervalEventEnd.getDate(), intervalEventEnd.getHours(), intervalEventEnd.getMinutes()],
                             title: `${nameOfDrugs} (${dosage}) Reminder`,
                             description: `Time to take your ${nameOfDrugs} (${dosage}).`,
                         });

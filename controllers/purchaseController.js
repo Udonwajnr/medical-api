@@ -7,6 +7,17 @@ const generateICSFile = require("../middleware/generateICSFile")
 const purchaseMedication = asyncHandler(async (req, res) => {
     const { userId, medications, hospitalId } = req.body;
 
+    // Validate that medications include startTime for each medication
+    if (!medications || !Array.isArray(medications) || medications.length === 0) {
+        return res.status(400).json({ message: 'Medications must be provided.' });
+    }
+
+    for (const med of medications) {
+        if (!med.startTime) {
+            return res.status(400).json({ message: 'Start time is required for each medication.' });
+        }
+    }
+
     // Create a new purchase
     const purchase = new Purchase({
         user: userId,
@@ -23,15 +34,6 @@ const purchaseMedication = asyncHandler(async (req, res) => {
         return res.status(404).json({ message: 'User not found' });
     }
 
-    // Check if this purchase contains medications the user has bought before
-    // let emailToSend = false;
-    // medications.forEach(med => {
-    //     const isExisting = user.purchaseHistory.some(p => p.medication.toString() === med.medication.toString());
-    //     if (!isExisting) {
-    //         emailToSend = true; // Set flag to send email for new medication
-    //     }
-    // });
-
     // Add the purchase to the user's history
     user.purchases.push(purchase._id);
     user.purchaseHistory.push(...medications.map(med => ({
@@ -42,8 +44,8 @@ const purchaseMedication = asyncHandler(async (req, res) => {
 
     await user.save();
 
-    // Send email if it's a new medication and the user has an email address
-    if (user.email) {  // Check if user has an email
+    // Send email with ICS file if the user has an email address
+    if (user.email) {
         // Generate the ICS file for the user
         const icsFilePath = await generateICSFile(purchase._id);
 
