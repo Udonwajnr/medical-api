@@ -35,18 +35,24 @@ const getUserInHospital = asyncHandler(async (req, res) => {
 // Create a new user for a specific hospital
 const createUserInHospital = asyncHandler(async (req, res) => {
   const { hospitalId } = req.params;
-  const { fullName, dateOfBirth, gender, phoneNumber, email, medication } = req.body;
+  const { fullName, dateOfBirth, gender, phoneNumber, email, medication } = req.body; // Note: medications instead of medication
 
   // Validate the ObjectID for hospital
   if (!mongoose.Types.ObjectId.isValid(hospitalId)) {
     return res.status(400).json({ message: 'Invalid Hospital ID format' });
   }
 
-   // Check if the hospital exists
-   const hospitalDoc = await Hospital.findById(hospitalId);
-   if (!hospitalDoc) {
-       return res.status(404).json({ message: 'Hospital not found' });
-   }
+  // Check if the hospital exists
+  const hospitalDoc = await Hospital.findById(hospitalId);
+  if (!hospitalDoc) {
+    return res.status(404).json({ message: 'Hospital not found' });
+  }
+
+  // Validate that medications is an array and has the correct structure
+  const medicationObjects = medication.map(med => ({
+    medication: med.medication, // Should be ObjectId
+    quantity: med.quantity || 1 // Default quantity to 1 if not provided
+  }));
 
   // Create the new user
   const user = new User({
@@ -55,21 +61,23 @@ const createUserInHospital = asyncHandler(async (req, res) => {
     gender,
     phoneNumber,
     email,
-    medication,
-    hospital: hospitalId,
+    medication: medicationObjects, // Pass medication objects with medication and quantity
+    hospital: [hospitalId] // Since it's an array, ensure it's passed as an array
   });
 
+  // Save the new user to the database
   await user.save();
 
-
+  // Add the user to the hospital's users list
   hospitalDoc.users.push(user._id);
 
-    // Save the updated hospital document
+  // Save the updated hospital document
   await hospitalDoc.save();
 
-    // return the newly created user
+  // Return the newly created user
   res.status(201).json(user);
 });
+
 
 // Update a user in a specific hospital
 const updateUserInHospital = asyncHandler(async (req, res) => {

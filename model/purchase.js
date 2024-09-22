@@ -4,29 +4,32 @@ const purchaseSchema = new mongoose.Schema({
     user: {
         type: mongoose.Types.ObjectId,
         ref: 'User',
-        required: true,
+        required: true, // Ensures the purchase is associated with a user
     },
     medications: [{
         medication: {
             type: mongoose.Types.ObjectId,
             ref: 'Medication',
-            required: true,
+            required: true, // Ensures each item in the purchase has a medication reference
         },
         quantity: {
             type: Number,
-            default: 1, // Default value is 1
-            required: true,
+            default: 1, // Default value of 1 for quantity
+            required: true, // Quantity is required
+            min: [1, 'Quantity must be at least 1'] // Ensure quantity is at least 1
         }
     }],
     hospital: {
         type: mongoose.Types.ObjectId,
         ref: 'Hospital',
-        required: true,
+        required: true, // Ensures the purchase is associated with a hospital
     },
     createdAt: {
         type: Date,
-        default: Date.now,
+        default: Date.now, // Automatically sets the created date
     },
+}, {
+    timestamps: true // Automatically adds createdAt and updatedAt fields
 });
 
 module.exports = mongoose.model('Purchase', purchaseSchema);

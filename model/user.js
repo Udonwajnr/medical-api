@@ -1,43 +1,51 @@
-const mongoose = require("mongoose")
-const schema = mongoose.Schema
+const mongoose = require("mongoose");
+const schema = mongoose.Schema;
 
 const userSchema = new schema({
-    fullName:{
-        type:String,
-        required:true,
-        unique:true
+    fullName: {
+        type: String,
+        required: true,
+        unique: true
     },
-    dateOfBirth:{
-        type:Date,
-        // required:true
+    dateOfBirth: {
+        type: Date,
+        // required: true
     },
-    gender:{
-        type:String,
-        required:true
+    gender: {
+        type: String,
+        required: true
     },
-    phoneNumber:{
-        type:String,
-        // required:true
+    phoneNumber: {
+        type: String,
+        // required: true
     },
-    email:{
-        type:String,
+    email: {
+        type: String,
     },
-    medication:[{
-     type:mongoose.Types.ObjectId,
-     ref:"Medication"   
+    // Adding quantity for medication
+    medication: [{
+        medication: {
+            type: mongoose.Types.ObjectId,
+            ref: "Medication",
+            required: true
+        },
+        quantity: {
+            type: Number,
+            default: 1,  // Default value is 1 if not specified
+        }
     }],
-    hospital:[{
-        type:mongoose.Types.ObjectId,
-        ref:"Hospital"
+    hospital: [{
+        type: mongoose.Types.ObjectId,
+        ref: "Hospital"
     }],
     userSpecificMedicationRegimen: [{
         type: mongoose.Types.ObjectId,
         ref: "UserSpecificMedicationRegimen"
     }],
-    purchases:[{
-        type:mongoose.Types.ObjectId,
-        ref:"Purchase"
+    purchases: [{
+        type: mongoose.Types.ObjectId,
+        ref: "Purchase"
     }]
-},{timestamps: true })
+}, { timestamps: true });
 
-module.exports = mongoose.model("User", userSchema)
+module.exports = mongoose.model("User", userSchema);
