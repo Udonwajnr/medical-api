@@ -6,9 +6,9 @@ const Medication = require('../model/medication');
 const generateICSFile = async (userId) => {
     try {
         // Fetch user medications from the database
-        const userMedications = await Medication.find({ user: userId }).populate('hospital');
+        const userMedications = await Medication.one({ user: userId }).populate('hospital');
         console.log(userMedications)
-        if (userMedications.length === 0) {
+        if (userMedications) {
             console.log('No medications found for user.');
             return null;
         }

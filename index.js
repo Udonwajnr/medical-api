@@ -7,7 +7,7 @@ const colors = require("colors")
 const calender = require("./controllers/calenderGenerator")
 let cors = require("cors")
 let cookieParser = require("cookie-parser")
-
+const {purchaseMedication} = require('./controllers/purchaseController.js')
 
 
 const corsOptions = {
@@ -35,7 +35,20 @@ app.use("/api/hospital",require("./route/hospitalAuthenticationRoute.js"))
 // 
 app.use('/api/user',require('./route/userRoute'))
 app.use('/api/medication',require('./route/medicationRoute'))
+app.use('/api/purchase',require('./route/purchaseRoute.js'))
 app.use('/api/', require('./route/userSpecificMedicationRegimen.js'));
+
+// app.post('/purchase', async (req, res) => {
+//     const { userId, medicationIds, hospitalId } = req.body;
+
+//     try {
+//         // await purchaseMedication(userId, medicationIds, hospitalId);
+//         res.status(201).json({ message: 'Purchase recorded successfully and email sent.' });
+//     } catch (error) {
+//         res.status(400).json({ error: error.message });
+//     }
+// });
+
 app.use('/api/email',require('./route/emailReminder'))
 app.listen(port,()=>{
     console.log(`I'm Back`)
