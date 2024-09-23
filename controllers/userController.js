@@ -21,7 +21,7 @@ const getUserInHospital = asyncHandler(async (req, res) => {
   }
 
   // Fetch the user within the specified hospital
-  const user = await User.findOne({ _id: userId, hospital: hospitalId }).populate("medication").populate("purchases");
+  const user = await User.findOne({ _id: userId, hospital: hospitalId }).populate({path:"medication",populate:{path:"medication"}}).populate("purchases");
 
   // Check if user exists
   if (!user) {
