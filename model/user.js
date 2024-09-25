@@ -1,56 +1,112 @@
 const mongoose = require("mongoose");
 const schema = mongoose.Schema;
 
-const userSchema = new schema({
+const userSchema = new schema(
+  {
     fullName: {
-        type: String,
-        required: true,
-        unique: true
+      type: String,
+      required: true,
+      unique: true,
     },
     dateOfBirth: {
-        type: Date,
-        // required: true
+      type: Date,
     },
     gender: {
-        type: String,
-        required: true
+      type: String,
+      required: true,
     },
     phoneNumber: {
-        type: String,
-        // required: true
+      type: String,
     },
     email: {
-        type: String,
+      type: String,
     },
-    // Adding quantity for medication
-    medication: [{
+    // Linking medication details
+    medications: [
+      {
         medication: {
-            type: mongoose.Types.ObjectId,
-            ref: "Medication",
-            required: true
+          type: mongoose.Types.ObjectId,
+          ref: "Medication",
+          required: true,
         },
         quantity: {
-            type: Number,
-            default: 1,  // Default value is 1 if not specified
+          type: Number,
+          default: 1, // Default value is 1 if not specified
+        },
+        startDate: {
+          type: Date,
+          required: true,
+          default: Date.now, // Start of the medication
+        },
+        endDate: {
+          type: Date,
+        },
+        current: {
+          // Track whether the medication is currently active
+          type: Boolean,
+          default: true,
+        },
+      },
+    ],
+    hospital: [
+      {
+        type: mongoose.Types.ObjectId,
+        ref: "Hospital",
+      },
+    ],
+    userSpecificMedicationRegimen: [
+      {
+        type: mongoose.Types.ObjectId,
+        ref: "UserSpecificMedicationRegimen",
+      },
+    ],
+    purchases: [
+      {
+        type: mongoose.Types.ObjectId,
+        ref: "Purchase",
+      },
+    ],
+  },
+  { timestamps: true }
+);
+
+// Middleware to calculate endDate and update current status
+userSchema.pre("save", async function (next) {
+  try {
+    const Medication = mongoose.model("Medication");
+
+    for (let med of this.medications) {
+      // If endDate is not set, calculate it based on the medication's duration
+      if (!med.endDate) {
+        const medicationDetails = await Medication.findById(med.medication);
+
+        if (medicationDetails && medicationDetails.duration) {
+          const { value, unit } = medicationDetails.duration;
+          const startDate = med.startDate || new Date();
+          let endDate = new Date(startDate);
+
+          if (unit === "days") {
+            endDate.setDate(endDate.getDate() + value);
+          } else if (unit === "weeks") {
+            endDate.setDate(endDate.getDate() + value * 7);
+          }
+
+          med.endDate = endDate;
         }
-    }],
-    hospital: [{
-        type: mongoose.Types.ObjectId,
-        ref: "Hospital"
-    }],
-    userSpecificMedicationRegimen: [{
-        type: mongoose.Types.ObjectId,
-        ref: "UserSpecificMedicationRegimen"
-    }],
-    purchases: [{
-        type: mongoose.Types.ObjectId,
-        ref: "Purchase"
-    }],
-    purchaseHistory: [{
-        medication: { type: mongoose.Types.ObjectId, ref: "Medication" },
-        quantity: { type: Number, default: 1 },
-        date: { type: Date, default: Date.now }
-      }]
-}, { timestamps: true });
+      }
+
+      // Update current status based on endDate
+      if (med.endDate && med.endDate < Date.now()) {
+        med.current = false;
+      } else {
+        med.current = true;
+      }
+    }
+  } catch (error) {
+    next(error); // Pass any errors to the error handler
+  }
+
+  next();
+});
 
 module.exports = mongoose.model("User", userSchema);

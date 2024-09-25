@@ -5,6 +5,8 @@ const dotenv = require("dotenv").config()
 const port = process.env.PORT||3000
 const colors = require("colors")
 const calender = require("./controllers/calenderGenerator")
+const sendMedicationReminder = require("./middleware/termil.js")
+
 let cors = require("cors")
 let cookieParser = require("cookie-parser")
 
@@ -47,13 +49,18 @@ app.use('/api/', require('./route/userSpecificMedicationRegimen.js'));
 //         res.status(400).json({ error: error.message });
 //     }
 // });
+const userPhoneNumber = "+2348146880362"; // User's phone number in international format
+const userName = "John";
+const medicationName = "Paracetamol";
+const dosage = "500mg";
+const dosageForm = "tablet";
+
+// Trigger the reminder
 
 app.listen(port,()=>{
-    console.log(`I'm Back`)
-    console.log( new Date())
+  console.log(`I'm Back`)
+  console.log( new Date())
+  // sendMedicationReminder(userPhoneNumber, userName, medicationName, dosage, dosageForm);
 })
-
-
-
 
 connectDb()

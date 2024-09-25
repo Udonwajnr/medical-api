@@ -61,6 +61,10 @@ const HospitalSchema = new mongoose.Schema({
   resetPasswordExpires:{
     type:Date
     },
+  purchaseHistory:[{
+    type:mongoose.Types.ObjectId,
+    ref:"Purchase"
+  }],
   createdAt: {
     type: Date,
     default: Date.now,
