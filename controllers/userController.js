@@ -280,7 +280,6 @@ const updateUserInHospital = asyncHandler(async (req, res) => {
   }
 });
 
-
 // Delete a user in a specific hospital
 const deleteUserInHospital = asyncHandler(async (req, res) => {
   const { hospitalId, userId } = req.params;
