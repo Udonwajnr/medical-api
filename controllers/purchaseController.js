@@ -7,22 +7,13 @@ const generateICSFile = require("../middleware/generateICSFile")
 const purchaseMedication = asyncHandler(async (req, res) => {
     const { userId, medications, hospitalId } = req.body;
 
-    // Validate that medications include startTime for each medication
-    if (!medications || !Array.isArray(medications) || medications.length === 0) {
-        return res.status(400).json({ message: 'Medications must be provided.' });
-    }
-
-    for (const med of medications) {
-        if (!med.startTime) {
-            return res.status(400).json({ message: 'Start time is required for each medication.' });
-        }
-    }
 
     // Create a new purchase
     const purchase = new Purchase({
         user: userId,
         medications,
         hospital: hospitalId,
+        totalPurchase:80
     });
 
     // Save the purchase
@@ -35,12 +26,12 @@ const purchaseMedication = asyncHandler(async (req, res) => {
     }
 
     // Add the purchase to the user's history
-    user.purchases.push(purchase._id);
-    user.purchaseHistory.push(...medications.map(med => ({
-        medication: med.medication,
-        quantity: med.quantity,
-        date: Date.now(),
-    })));
+    // user.purchases.push(purchase._id);
+    // user.purchaseHistory.push(...medications.map(med => ({
+    //     medication: med.medication,
+    //     quantity: med.quantity,
+    //     date: Date.now(),
+    // })));
 
     await user.save();
 

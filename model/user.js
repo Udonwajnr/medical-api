@@ -46,10 +46,6 @@ const userSchema = new schema(
           type: Boolean,
           default: true,
         },
-        remove:{
-          type: Boolean,
-          default: false,
-        }
       },
     ],
     newMedications: [

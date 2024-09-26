@@ -4,6 +4,7 @@ const path = require('path');
 const Purchase = require('../model/purchase'); // Adjust path if necessary
 
 const generateICSFile = async (purchaseId) => {
+    console.log(purchaseId)
     try {
         // Fetch the specific purchase from the Purchase model
         const purchase = await Purchase.findById(purchaseId).populate('medications.medication');
@@ -15,6 +16,7 @@ const generateICSFile = async (purchaseId) => {
 
         // Prepare the events array
         const events = [];
+        console.log(purchase.medications)
 
         // Inside your loop for each medication
         purchase.medications.forEach(purchaseMed => {

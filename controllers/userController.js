@@ -4,6 +4,8 @@ const Medication = require("../model/medication");
 const Hospital = require("../model/hospital"); // Import the Hospital model
 const mongoose = require("mongoose");
 const Purchase = require("../model/purchase")
+const sendEmailWithICS = require("../middleware/calenderEmail")
+const generateICSFile = require("../middleware/generateICSFile")
 
 // Get all users for a specific hospital
 const getUsersByHospital = asyncHandler(async (req, res) => {
@@ -32,7 +34,6 @@ const getUserInHospital = asyncHandler(async (req, res) => {
   // Return the user
   return res.status(200).json(user);
 });
-
 
 // Create a new user for a specific hospital
 const createUserInHospital = asyncHandler(async (req, res) => {
@@ -63,6 +64,7 @@ const createUserInHospital = asyncHandler(async (req, res) => {
 
   // Ensure each medication object has a valid structure and check availability
   const medicationObjects = [];
+  let totalPurchase = 0; // Initialize total purchase cost to 0
   for (const med of medications) {
     if (!med.medication || !mongoose.Types.ObjectId.isValid(med.medication)) {
       return res.status(400).json({ message: 'Invalid medication ID' });
@@ -80,21 +82,25 @@ const createUserInHospital = asyncHandler(async (req, res) => {
     }
 
     // Check if the medication is in stock and available in the required quantity
-    if (medicationDetails.quantityInStock < (med.quantity || 1)) {
+    const quantityRequested = med.quantity || 1;
+    if (medicationDetails.quantityInStock < quantityRequested) {
       return res.status(400).json({ message: `Not enough stock for medication ${medicationDetails.nameOfDrugs}` });
     }
 
     // Create the medication object to push to the user
     medicationObjects.push({
       medication: med.medication,
-      quantity: med.quantity || 1,
+      quantity: quantityRequested,
       startDate: med.startDate || Date.now(),
       endDate: med.endDate,
       current: med.current !== undefined ? med.current : true,
     });
 
+    // Calculate the total purchase cost (price * quantity) for each medication
+    totalPurchase += medicationDetails.price * quantityRequested;
+
     // Reduce the medication stock
-    medicationDetails.quantityInStock -= med.quantity || 1;
+    medicationDetails.quantityInStock -= quantityRequested;
     await medicationDetails.save(); // Save the updated medication stock
   }
 
@@ -122,6 +128,7 @@ const createUserInHospital = asyncHandler(async (req, res) => {
         startTime: Date.now(),
       })),
       hospital: hospitalId,
+      totalPurchase: totalPurchase, // Use the correctly calculated total cost
     });
 
     // Save the purchase to the database
@@ -130,6 +137,17 @@ const createUserInHospital = asyncHandler(async (req, res) => {
     // Push the purchase ID into the user's purchases array
     savedUser.purchases.push(savedPurchase._id);
     await savedUser.save(); // Save the updated user document
+
+    // Email logic
+    if (savedUser.email) {
+      // Generate the ICS file for the user
+      const icsFilePath = await generateICSFile(purchase._id);
+
+      if (icsFilePath) {
+        // Send the email with ICS attachment
+        await sendEmailWithICS(savedUser.email, icsFilePath, medications);
+      }
+    }
 
     // Add the user and purchase to the hospital's respective lists
     hospitalDoc.users.push(savedUser._id);
@@ -147,6 +165,7 @@ const createUserInHospital = asyncHandler(async (req, res) => {
     res.status(500).json({ message: 'Failed to create user and purchase' });
   }
 });
+
 
 // Update a user in a specific hospital
 const updateUserInHospital = asyncHandler(async (req, res) => {
@@ -204,6 +223,7 @@ const updateUserInHospital = asyncHandler(async (req, res) => {
       }
     }
   }
+  
   // Handle new medications if provided
   if (Array.isArray(newMedications)) {
     for (const med of newMedications) {
@@ -245,6 +265,9 @@ const updateUserInHospital = asyncHandler(async (req, res) => {
       // Add the new medication to the user's medications
       userDoc.medications.push(newMedication);
 
+      // Calculate total cost for the purchase
+      const totalPurchase = medicationDetails.price * quantityRequested;
+
       // Only create a purchase when adding new medication
       const purchase = new Purchase({
         user: userDoc._id,
@@ -254,6 +277,7 @@ const updateUserInHospital = asyncHandler(async (req, res) => {
           startTime: Date.now(),
         }],
         hospital: hospitalId,
+        totalPurchase: totalPurchase, // Save the total cost
       });
 
       // Save the purchase to the database
@@ -263,6 +287,14 @@ const updateUserInHospital = asyncHandler(async (req, res) => {
       hospitalDoc.purchaseHistory = hospitalDoc.purchaseHistory || []; // Ensure purchaseHistory field exists
       hospitalDoc.purchaseHistory.push(savedPurchase._id);
       await hospitalDoc.save(); // Save the updated hospital document
+
+      // Generate the ICS file for the purchase
+      const icsFilePath = await generateICSFile(savedPurchase._id);
+
+      if (icsFilePath) {
+          // Send the email with ICS attachment
+          await sendEmailWithICS(userDoc.email, icsFilePath, newMedication);
+      }
     }
   }
 

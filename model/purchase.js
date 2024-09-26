@@ -29,6 +29,7 @@ const purchaseSchema = new mongoose.Schema({
         ref: 'Hospital',
         required: true, // Ensures the purchase is associated with a hospital
     },
+    totalPurchase: { type: Number, required: true }, // Add this field to store total cost
     createdAt: {
         type: Date,
         default: Date.now, // Automatically sets the created date
