@@ -15,7 +15,7 @@ const sendEmailWithICS = async (toEmail, icsFilePath, medications) => {
         from: 'umohu67@gmail.com',
         to: toEmail,
         subject: 'Your Medication Purchase and Reminder',
-        text: `You have purchased the following medications:\n${medications.map(m => m.medication.nameOfDrugs).join(', ')}.\nPlease find your medication reminder attached.`,
+        text: `You have purchased the following medications from us.Please find your medication reminder attached.`,
         attachments: [
             {
                 filename: 'medication-reminders.ics',

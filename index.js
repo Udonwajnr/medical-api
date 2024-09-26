@@ -10,7 +10,6 @@ const sendMedicationReminder = require("./middleware/termil.js")
 let cors = require("cors")
 let cookieParser = require("cookie-parser")
 
-
 const corsOptions = {
   origin: function (origin, callback) {
     const allowedOrigins = [
