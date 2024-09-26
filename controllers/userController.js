@@ -8,7 +8,7 @@ const Purchase = require("../model/purchase")
 // Get all users for a specific hospital
 const getUsersByHospital = asyncHandler(async (req, res) => {
   const { hospitalId } = req.params;
-  const users = await User.find({ hospital: hospitalId }).populate("medication").populate("purchases");
+  const users = await User.find({ hospital: hospitalId }).populate({path:"medications",populate:{path:"medication"}}).populate("purchases");
   return res.status(200).json(users);
 });
 
@@ -72,6 +72,11 @@ const createUserInHospital = asyncHandler(async (req, res) => {
     const medicationDetails = await Medication.findById(med.medication);
     if (!medicationDetails) {
       return res.status(404).json({ message: `Medication with ID ${med.medication} not found` });
+    }
+
+    // Check if the medication is associated with the hospital
+    if (!medicationDetails.hospital.includes(hospitalId)) {
+      return res.status(404).json({ message: `Medication ${medicationDetails.nameOfDrugs} is not available in this hospital` });
     }
 
     // Check if the medication is in stock and available in the required quantity
@@ -146,7 +151,7 @@ const createUserInHospital = asyncHandler(async (req, res) => {
 // Update a user in a specific hospital
 const updateUserInHospital = asyncHandler(async (req, res) => {
   const { hospitalId, userId } = req.params;
-  const { fullName, dateOfBirth, gender, phoneNumber, email, medications } = req.body;
+  const { fullName, dateOfBirth, gender, phoneNumber, email, medications, newMedications } = req.body;
 
   // Validate the ObjectIDs for hospital and user
   if (!mongoose.Types.ObjectId.isValid(hospitalId) || !mongoose.Types.ObjectId.isValid(userId)) {
@@ -172,15 +177,44 @@ const updateUserInHospital = asyncHandler(async (req, res) => {
   if (phoneNumber) userDoc.phoneNumber = phoneNumber;
   if (email) userDoc.email = email;
 
-  // Handle medications update if provided
+  // Handle existing medications update if provided
   if (Array.isArray(medications)) {
-    const medicationObjects = [];
-    const existingMedicationIds = userDoc.medications.map(med => med.medication.toString());
-
-    // Loop through provided medications
     for (const med of medications) {
       if (!med.medication || !mongoose.Types.ObjectId.isValid(med.medication)) {
         return res.status(400).json({ message: 'Invalid medication ID' });
+      }
+
+      const existingMedication = userDoc.medications.find(
+        (m) => m.medication.toString() === med.medication
+      );
+
+      if (!existingMedication) {
+        return res.status(404).json({ message: `Medication with ID ${med.medication} not found in user's list` });
+      }
+      // Update or remove the medication
+      if (med.remove) {
+        userDoc.medications = userDoc.medications.filter(
+          (m) => m.medication.toString() !== med.medication
+        );
+      } else {
+        existingMedication.quantity = med.quantity || existingMedication.quantity;
+        existingMedication.startDate = med.startDate || existingMedication.startDate;
+        existingMedication.endDate = med.endDate || existingMedication.endDate;
+        existingMedication.current = med.current !== undefined ? med.current : existingMedication.current;
+      }
+    }
+  }
+  // Handle new medications if provided
+  if (Array.isArray(newMedications)) {
+    for (const med of newMedications) {
+      if (!med.medication || !mongoose.Types.ObjectId.isValid(med.medication)) {
+        return res.status(400).json({ message: 'Invalid medication ID' });
+      }
+
+      // Check if the medication exists in the hospital's medication list
+      const medicationExistsInHospital = hospitalDoc.medication.includes(med.medication);
+      if (!medicationExistsInHospital) {
+        return res.status(404).json({ message: `Medication with ID ${med.medication} does not exist in this hospital` });
       }
 
       const medicationDetails = await Medication.findById(med.medication);
@@ -190,86 +224,46 @@ const updateUserInHospital = asyncHandler(async (req, res) => {
 
       const quantityRequested = med.quantity || 1;
 
-      // If the medication is new (not already associated with the user)
-      if (!existingMedicationIds.includes(med.medication.toString())) {
-        // Check stock availability
-        if (medicationDetails.quantityInStock < quantityRequested) {
-          return res.status(400).json({ message: `Not enough stock for medication ${medicationDetails.nameOfDrugs}` });
-        }
+      // Check stock availability for the requested quantity
+      if (medicationDetails.quantityInStock < quantityRequested) {
+        return res.status(400).json({ message: `Not enough stock for medication ${medicationDetails.nameOfDrugs}` });
+      }
 
-        // Reduce the medication stock
-        medicationDetails.quantityInStock -= quantityRequested;
-        await medicationDetails.save(); // Save the updated medication stock
+      // Reduce the medication stock
+      medicationDetails.quantityInStock -= quantityRequested;
+      await medicationDetails.save(); // Save the updated medication stock
 
-        // Create the new medication object to push to the user
-        medicationObjects.push({
+      // Create the new medication object
+      const newMedication = {
+        medication: med.medication,
+        quantity: quantityRequested,
+        startDate: med.startDate || Date.now(),
+        endDate: med.endDate,
+        current: med.current !== undefined ? med.current : true,
+      };
+
+      // Add the new medication to the user's medications
+      userDoc.medications.push(newMedication);
+
+      // Only create a purchase when adding new medication
+      const purchase = new Purchase({
+        user: userDoc._id,
+        medications: [{
           medication: med.medication,
           quantity: quantityRequested,
-          startDate: med.startDate || Date.now(),
-          endDate: med.endDate,
-          current: med.current !== undefined ? med.current : true,
-        });
+          startTime: Date.now(),
+        }],
+        hospital: hospitalId,
+      });
 
-        // Create a purchase for the new medication
-        const purchase = new Purchase({
-          user: userDoc._id,
-          medications: [{
-            medication: med.medication,
-            quantity: quantityRequested,
-            startTime: Date.now(),
-          }],
-          hospital: hospitalId,
-        });
+      // Save the purchase to the database
+      const savedPurchase = await purchase.save();
 
-        // Save the purchase to the database
-        await purchase.save();
-
-        // Verify that the medication was added to the user
-        const addedMed = medicationObjects.find(m => m.medication.toString() === med.medication.toString());
-        if (!addedMed) {
-          return res.status(500).json({ message: `Error: Medication with ID ${med.medication} was not added to the user` });
-        }
-      } else {
-        // Update existing medication fields
-        const existingMedIndex = userDoc.medications.findIndex(m => m.medication.toString() === med.medication.toString());
-        const existingMed = userDoc.medications[existingMedIndex];
-
-        // If the quantity is being increased, check stock availability
-        if (quantityRequested > existingMed.quantity) {
-          const additionalQuantity = quantityRequested - existingMed.quantity;
-
-          // Check stock availability
-          if (medicationDetails.quantityInStock < additionalQuantity) {
-            return res.status(400).json({ message: `Not enough stock for medication ${medicationDetails.nameOfDrugs}` });
-          }
-
-          // Reduce the medication stock
-          medicationDetails.quantityInStock -= additionalQuantity;
-          await medicationDetails.save(); // Save the updated medication stock
-        }
-
-        // Update existing medication properties
-        existingMed.quantity = quantityRequested;
-        existingMed.startDate = med.startDate || existingMed.startDate; // Update start date if provided
-        existingMed.endDate = med.endDate || existingMed.endDate; // Update end date if provided
-        existingMed.current = med.current !== undefined ? med.current : existingMed.current; // Update current status if provided
-        medicationObjects.push(existingMed);
-      }
+      // Update the hospital's purchase history
+      hospitalDoc.purchaseHistory = hospitalDoc.purchaseHistory || []; // Ensure purchaseHistory field exists
+      hospitalDoc.purchaseHistory.push(savedPurchase._id);
+      await hospitalDoc.save(); // Save the updated hospital document
     }
-
-    // Handle removal of medications not included in the updated list
-    const medicationsToRemove = userDoc.medications.filter(m => !medications.some(med => med.medication.toString() === m.medication.toString()));
-    for (const med of medicationsToRemove) {
-      const medicationDetails = await Medication.findById(med.medication);
-      // Restock the medication if it was previously assigned to the user
-      if (medicationDetails) {
-        medicationDetails.quantityInStock += med.quantity; // Restore stock
-        await medicationDetails.save();
-      }
-    }
-
-    // Assign updated medication objects to the user
-    userDoc.medications = medicationObjects;
   }
 
   try {
@@ -285,7 +279,6 @@ const updateUserInHospital = asyncHandler(async (req, res) => {
     res.status(500).json({ message: 'Failed to update user' });
   }
 });
-
 
 
 // Delete a user in a specific hospital

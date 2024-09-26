@@ -46,6 +46,19 @@ const userSchema = new schema(
           type: Boolean,
           default: true,
         },
+        remove:{
+          type: Boolean,
+          default: false,
+        }
+      },
+    ],
+    newMedications: [
+      {
+        medication: { type: mongoose.Schema.Types.ObjectId, ref: 'Medication' },
+        quantity: { type: Number, default: 1 },
+        startDate: { type: Date, default: Date.now },
+        endDate: Date,
+        current: { type: Boolean, default: true },
       },
     ],
     hospital: [
