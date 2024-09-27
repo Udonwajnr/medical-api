@@ -103,7 +103,6 @@ userSchema.pre("save", async function (next) {
           med.endDate = endDate;
         }
       }
-
       // Update current status based on endDate
       if (med.endDate && med.endDate < Date.now()) {
         med.current = false;

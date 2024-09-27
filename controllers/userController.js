@@ -166,12 +166,12 @@ const createUserInHospital = asyncHandler(async (req, res) => {
   }
 });
 
-
 // Update a user in a specific hospital
 const updateUserInHospital = asyncHandler(async (req, res) => {
   const { hospitalId, userId } = req.params;
   const { fullName, dateOfBirth, gender, phoneNumber, email, medications, newMedications } = req.body;
 
+  console.log(medications, newMedications)
   // Validate the ObjectIDs for hospital and user
   if (!mongoose.Types.ObjectId.isValid(hospitalId) || !mongoose.Types.ObjectId.isValid(userId)) {
     return res.status(400).json({ message: 'Invalid Hospital ID or User ID format' });
