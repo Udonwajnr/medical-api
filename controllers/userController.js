@@ -227,9 +227,78 @@ const updateUserInHospital = asyncHandler(async (req, res) => {
     userDoc.medications = userDoc.medications.filter(m => !m.remove);
   }
 
-  // Handle new medications if provided
+  // handles new medications
   if (Array.isArray(newMedications)) {
-    // Add new medications logic remains unchanged...
+    for (const med of newMedications) {
+      if (!med.medication || !mongoose.Types.ObjectId.isValid(med.medication)) {
+        return res.status(400).json({ message: 'Invalid medication ID' });
+      }
+
+      // Check if the medication exists in the hospital's medication list
+      const medicationExistsInHospital = hospitalDoc.medication.includes(med.medication);
+      if (!medicationExistsInHospital) {
+        return res.status(404).json({ message: `Medication with ID ${med.medication} does not exist in this hospital` });
+      }
+
+      const medicationDetails = await Medication.findById(med.medication);
+      if (!medicationDetails) {
+        return res.status(404).json({ message: `Medication with ID ${med.medication} not found` });
+      }
+
+      const quantityRequested = med.quantity || 1;
+
+      // Check stock availability for the requested quantity
+      if (medicationDetails.quantityInStock < quantityRequested) {
+        return res.status(400).json({ message: `Not enough stock for medication ${medicationDetails.nameOfDrugs}` });
+      }
+
+      // Reduce the medication stock
+      medicationDetails.quantityInStock -= quantityRequested;
+      await medicationDetails.save(); // Save the updated medication stock
+
+      // Create the new medication object
+      const newMedication = {
+        medication: med.medication,
+        quantity: quantityRequested,
+        startDate: med.startDate || Date.now(),
+        endDate: med.endDate,
+        current: med.current !== undefined ? med.current : true,
+      };
+
+      // Add the new medication to the user's medications
+      userDoc.medications.push(newMedication);
+
+      // Calculate total cost for the purchase
+      const totalPurchase = medicationDetails.price * quantityRequested;
+
+      // Only create a purchase when adding new medication
+      const purchase = new Purchase({
+        user: userDoc._id,
+        medications: [{
+          medication: med.medication,
+          quantity: quantityRequested,
+          startTime: Date.now(),
+        }],
+        hospital: hospitalId,
+        totalPurchase: totalPurchase, // Save the total cost
+      });
+
+      // Save the purchase to the database
+      const savedPurchase = await purchase.save();
+
+      // Update the hospital's purchase history
+      hospitalDoc.purchaseHistory = hospitalDoc.purchaseHistory || []; // Ensure purchaseHistory field exists
+      hospitalDoc.purchaseHistory.push(savedPurchase._id);
+      await hospitalDoc.save(); // Save the updated hospital document
+
+      // Generate the ICS file for the purchase
+      const icsFilePath = await generateICSFile(savedPurchase._id);
+
+      if (icsFilePath) {
+        // Send the email with ICS attachment
+        await sendEmailWithICS(userDoc.email, icsFilePath, newMedication);
+      }
+    }
   }
 
   try {
