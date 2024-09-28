@@ -46,6 +46,10 @@ const userSchema = new schema(
           type: Boolean,
           default: true,
         },
+        remove: { // New field for marking removal
+          type: Boolean,
+          default: false,
+        },
       },
     ],
     newMedications: [
