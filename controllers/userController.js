@@ -10,7 +10,7 @@ const generateICSFile = require("../middleware/generateICSFile")
 // Get all users for a specific hospital
 const getUsersByHospital = asyncHandler(async (req, res) => {
   const { hospitalId } = req.params;
-  const users = await User.find({ hospital: hospitalId }).populate({path:"medications",populate:{path:"medication"}}).populate("purchases");
+  const users = await User.find({ hospital: hospitalId }).populate({path:"medications",populate:{path:"medication"}})
   return res.status(200).json(users);
 });
 
@@ -24,7 +24,13 @@ const getUserInHospital = asyncHandler(async (req, res) => {
   }
 
   // Fetch the user within the specified hospital
-  const user = await User.findOne({ _id: userId, hospital: hospitalId }).populate({path:"medications",populate:{path:"medication"}}).populate("purchases");
+  const user = await User.findOne({ _id: userId, hospital: hospitalId }).populate({path:"medications",populate:{path:"medication"}}) .populate({
+    path: "purchases",  // Populating user's purchases
+    populate: { 
+      path: 'medications.medication',  // Populating medication inside each purchase's medications
+      model: 'Medication' 
+    }
+  });;
 
   // Check if user exists
   if (!user) {
@@ -33,6 +39,7 @@ const getUserInHospital = asyncHandler(async (req, res) => {
 
   // Return the user
   return res.status(200).json(user);
+
 });
 
 // Create a new user for a specific hospital
