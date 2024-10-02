@@ -51,7 +51,7 @@ const userSchema = new schema(
           default: false,
         },
         customDosage: {
-          type: String,
+          type: Number,
            },
           customFrequency: {
             value: { 
