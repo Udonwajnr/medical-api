@@ -52,16 +52,29 @@ const userSchema = new schema(
         },
         customDosage: {
           type: String,
-          required: true
-      },
-      customFrequency: {
-          type: String,
-          required: true
-      },
-      duration: {
-          type: Number, // Duration in days
-          required: true
-      },
+           },
+          customFrequency: {
+            value: { 
+              type: Number,
+              // required: true,
+            },
+            unit: { 
+              type: String,
+              enum: ['hours', 'days'], // Adjust the units as needed
+              // required: true,
+            },
+          },
+          customDuration: {
+            value: { 
+              type: Number, 
+              // required: true, // e.g., 7 or 4
+            },
+            unit: { 
+              type: String, 
+              enum: ['days', 'weeks'], 
+              // required: true, // e.g., 'days' or 'weeks'
+            },
+          },
       },
     ],
     newMedications: [

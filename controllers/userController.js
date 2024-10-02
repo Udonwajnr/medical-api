@@ -94,14 +94,23 @@ const createUserInHospital = asyncHandler(async (req, res) => {
       return res.status(400).json({ message: `Not enough stock for medication ${medicationDetails.nameOfDrugs}` });
     }
 
-    // Create the medication object to push to the user
-    medicationObjects.push({
+    // Conditionally handle custom fields if `custom` is true
+    const medicationObject = {
       medication: med.medication,
       quantity: quantityRequested,
       startDate: med.startDate || Date.now(),
       endDate: med.endDate,
       current: med.current !== undefined ? med.current : true,
-    });
+    };
+
+    if (med.custom) {
+      // If custom is true, add custom fields
+      medicationObject.customDosage = med.customDosage;
+      medicationObject.customFrequency = med.customFrequency;
+      medicationObject.customDuration = med.customDuration;
+    }
+
+    medicationObjects.push(medicationObject);
 
     // Calculate the total purchase cost (price * quantity) for each medication
     totalPurchase += medicationDetails.price * quantityRequested;
@@ -172,6 +181,7 @@ const createUserInHospital = asyncHandler(async (req, res) => {
     res.status(500).json({ message: 'Failed to create user and purchase' });
   }
 });
+
 
 // Update a user in a specific hospital
 const updateUserInHospital = asyncHandler(async (req, res) => {
