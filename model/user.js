@@ -50,6 +50,18 @@ const userSchema = new schema(
           type: Boolean,
           default: false,
         },
+        customDosage: {
+          type: String,
+          required: true
+      },
+      customFrequency: {
+          type: String,
+          required: true
+      },
+      duration: {
+          type: Number, // Duration in days
+          required: true
+      },
       },
     ],
     newMedications: [

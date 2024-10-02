@@ -1,14 +1,16 @@
-const express = require("express")
-const app = express()
-const connectDb = require("./config/db")
-const dotenv = require("dotenv").config()
-const port = process.env.PORT||3000
-const colors = require("colors")
-const calender = require("./controllers/calenderGenerator")
-const sendMedicationReminder = require("./middleware/termil.js")
+const express = require("express");
+const http = require("http"); // Import HTTP module
+const app = express();
+const server = http.createServer(app); // Create a server from the express app
+const connectDb = require("./config/db");
+const dotenv = require("dotenv").config();
+const port = process.env.PORT || 3000;
+const colors = require("colors");
+let cors = require("cors");
+let cookieParser = require("cookie-parser");
 
-let cors = require("cors")
-let cookieParser = require("cookie-parser")
+// Import socket.io setup
+const initSocket = require("./middleware/socket.js"); // WebSocket logic in separate file
 
 const corsOptions = {
   origin: function (origin, callback) {
@@ -29,37 +31,23 @@ app.use(cookieParser());
 app.use(cors(corsOptions));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
-// 
+
+// Routes
 app.use('/api', require('./route/authenticationTokenRoute.js'));
-app.use("/api/hospital",require("./route/hospitalAuthenticationRoute.js"))
-// 
-app.use('/api/user',require('./route/userRoute'))
-app.use('/api/medication',require('./route/medicationRoute'))
-app.use('/api/purchase',require('./route/purchaseRoute.js'))
+app.use("/api/hospital", require("./route/hospitalAuthenticationRoute.js"));
+app.use('/api/user', require('./route/userRoute'));
+app.use('/api/medication', require('./route/medicationRoute'));
+app.use('/api/purchase', require('./route/purchaseRoute.js'));
 app.use('/api/', require('./route/userSpecificMedicationRegimen.js'));
 
-// app.post('/purchase', async (req, res) => {
-//     const { userId, medicationIds, hospitalId } = req.body;
-
-//     try {
-//         // await purchaseMedication(userId, medicationIds, hospitalId);
-//         res.status(201).json({ message: 'Purchase recorded successfully and email sent.' });
-//     } catch (error) {
-//         res.status(400).json({ error: error.message });
-//     }
-// });
-const userPhoneNumber = "+2348146880362"; // User's phone number in international format
-const userName = "John";
-const medicationName = "Paracetamol";
-const dosage = "500mg";
-const dosageForm = "tablet";
+// Initialize WebSocket
+const io = initSocket(server);
 
 // Trigger the reminder
-
-app.listen(port,()=>{
-  console.log(`I'm Back`)
-  console.log( new Date())
+server.listen(port, () => {
+  console.log(`Server is running on port ${port}`.yellow);
+  console.log(new Date());
   // sendMedicationReminder(userPhoneNumber, userName, medicationName, dosage, dosageForm);
-})
+});
 
-connectDb()
+connectDb();
