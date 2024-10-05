@@ -105,6 +105,7 @@ const createUserInHospital = asyncHandler(async (req, res) => {
 
     if (med.custom) {
       // If custom is true, add custom fields
+      medicationObject.custom = med.custom
       medicationObject.customDosage = med.customDosage;
       medicationObject.customFrequency = med.customFrequency;
       medicationObject.customDuration = med.customDuration;

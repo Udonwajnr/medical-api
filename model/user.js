@@ -46,9 +46,14 @@ const userSchema = new schema(
           type: Boolean,
           default: true,
         },
-        remove: { // New field for marking removal
+        remove: { 
+          // New field for marking removal
           type: Boolean,
           default: false,
+        },
+        custom:{
+          type:Boolean,
+          default:false
         },
         customDosage: {
           type: Number,
@@ -77,6 +82,8 @@ const userSchema = new schema(
           },
       },
     ],
+
+
     newMedications: [
       {
         medication: { type: mongoose.Schema.Types.ObjectId, ref: 'Medication' },
