@@ -183,13 +183,12 @@ const createUserInHospital = asyncHandler(async (req, res) => {
   }
 });
 
-
 // Update a user in a specific hospital
 const updateUserInHospital = asyncHandler(async (req, res) => {
   const { hospitalId, userId } = req.params;
   const { fullName, dateOfBirth, gender, phoneNumber, email, medications, newMedications } = req.body;
 
-  // Validate the ObjectIDs for hospital and user
+  // Validate ObjectIDs for hospital and user
   if (!mongoose.Types.ObjectId.isValid(hospitalId) || !mongoose.Types.ObjectId.isValid(userId)) {
     return res.status(400).json({ message: 'Invalid Hospital ID or User ID format' });
   }
@@ -213,9 +212,8 @@ const updateUserInHospital = asyncHandler(async (req, res) => {
   if (phoneNumber) userDoc.phoneNumber = phoneNumber;
   if (email) userDoc.email = email;
 
-  // Handle existing medications update if provided
+  // Update existing medications if provided
   if (Array.isArray(medications)) {
-    // Process each medication in the array
     for (const med of medications) {
       if (!med.medication || !mongoose.Types.ObjectId.isValid(med.medication)) {
         return res.status(400).json({ message: 'Invalid medication ID' });
@@ -229,23 +227,35 @@ const updateUserInHospital = asyncHandler(async (req, res) => {
         return res.status(404).json({ message: `Medication with ID ${med.medication} not found in user's list` });
       }
 
-      // If the medication should be marked for removal
+      // Mark for removal if specified
       if (med.remove) {
-        existingMedication.remove = true; // Mark for removal
+        existingMedication.remove = true;
       } else {
-        // Update the existing medication's details
+        // Update medication details, including custom fields
         existingMedication.quantity = med.quantity !== undefined ? med.quantity : existingMedication.quantity;
         existingMedication.startDate = med.startDate !== undefined ? med.startDate : existingMedication.startDate;
         existingMedication.endDate = med.endDate !== undefined ? med.endDate : existingMedication.endDate;
         existingMedication.current = med.current !== undefined ? med.current : existingMedication.current;
+        existingMedication.custom = med.custom !== undefined ? med.custom : existingMedication.custom;
+        existingMedication.customDosage = med.customDosage !== undefined ? med.customDosage : existingMedication.customDosage;
+        
+        if (med.customFrequency) {
+          existingMedication.customFrequency.value = med.customFrequency.value !== undefined ? med.customFrequency.value : existingMedication.customFrequency.value;
+          existingMedication.customFrequency.unit = med.customFrequency.unit !== undefined ? med.customFrequency.unit : existingMedication.customFrequency.unit;
+        }
+        
+        if (med.customDuration) {
+          existingMedication.customDuration.value = med.customDuration.value !== undefined ? med.customDuration.value : existingMedication.customDuration.value;
+          existingMedication.customDuration.unit = med.customDuration.unit !== undefined ? med.customDuration.unit : existingMedication.customDuration.unit;
+        }
       }
     }
 
-    // Filter out medications marked for removal before saving
+    // Remove medications marked for deletion
     userDoc.medications = userDoc.medications.filter(m => !m.remove);
   }
 
-  // handles new medications
+  // Handle new medications
   if (Array.isArray(newMedications)) {
     for (const med of newMedications) {
       if (!med.medication || !mongoose.Types.ObjectId.isValid(med.medication)) {
@@ -272,7 +282,7 @@ const updateUserInHospital = asyncHandler(async (req, res) => {
 
       // Reduce the medication stock
       medicationDetails.quantityInStock -= quantityRequested;
-      await medicationDetails.save(); // Save the updated medication stock
+      await medicationDetails.save();
 
       // Create the new medication object
       const newMedication = {
@@ -283,13 +293,11 @@ const updateUserInHospital = asyncHandler(async (req, res) => {
         current: med.current !== undefined ? med.current : true,
       };
 
-      // Add the new medication to the user's medications
       userDoc.medications.push(newMedication);
 
       // Calculate total cost for the purchase
       const totalPurchase = medicationDetails.price * quantityRequested;
 
-      // Only create a purchase when adding new medication
       const purchase = new Purchase({
         user: userDoc._id,
         medications: [{
@@ -298,32 +306,26 @@ const updateUserInHospital = asyncHandler(async (req, res) => {
           startTime: Date.now(),
         }],
         hospital: hospitalId,
-        totalPurchase: totalPurchase, // Save the total cost
+        totalPurchase,
       });
 
-      // Save the purchase to the database
       const savedPurchase = await purchase.save();
 
-      // Update the hospital's purchase history
-      hospitalDoc.purchaseHistory = hospitalDoc.purchaseHistory || []; // Ensure purchaseHistory field exists
+      hospitalDoc.purchaseHistory = hospitalDoc.purchaseHistory || [];
       hospitalDoc.purchaseHistory.push(savedPurchase._id);
-      await hospitalDoc.save(); // Save the updated hospital document
+      await hospitalDoc.save();
 
-      // Generate the ICS file for the purchase
       const icsFilePath = await generateICSFile(savedPurchase._id);
 
       if (icsFilePath) {
-        // Send the email with ICS attachment
         await sendEmailWithICS(userDoc.email, icsFilePath, newMedication);
       }
     }
   }
 
   try {
-    // Save the updated user document
     const updatedUser = await userDoc.save();
 
-    // Return the updated user info
     res.status(200).json({
       user: updatedUser,
     });
@@ -332,8 +334,6 @@ const updateUserInHospital = asyncHandler(async (req, res) => {
     res.status(500).json({ message: 'Failed to update user' });
   }
 });
-
-
 
 // Delete a user in a specific hospital
 const deleteUserInHospital = asyncHandler(async (req, res) => {
