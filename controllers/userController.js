@@ -112,7 +112,6 @@ const createUserInHospital = asyncHandler(async (req, res) => {
     }
 
     medicationObjects.push(medicationObject);
-
     // Calculate the total purchase cost (price * quantity) for each medication
     totalPurchase += medicationDetails.price * quantityRequested;
 
@@ -193,161 +192,154 @@ const updateUserInHospital = asyncHandler(async (req, res) => {
     return res.status(400).json({ message: 'Invalid Hospital ID or User ID format' });
   }
 
-  // Start a session
-  const session = await mongoose.startSession();
-  try {
-    session.startTransaction();
+  // Check if the hospital exists
+  const hospitalDoc = await Hospital.findById(hospitalId);
+  if (!hospitalDoc) {
+    return res.status(404).json({ message: 'Hospital not found' });
+  }
 
-    // Check if the hospital exists
-    const hospitalDoc = await Hospital.findById(hospitalId).session(session);
-    if (!hospitalDoc) {
-      return res.status(404).json({ message: 'Hospital not found' });
-    }
+  // Check if the user exists in the hospital
+  const userDoc = await User.findOne({ _id: userId, hospital: hospitalId });
+  if (!userDoc) {
+    return res.status(404).json({ message: 'User not found in this hospital' });
+  }
 
-    // Check if the user exists in the hospital
-    const userDoc = await User.findOne({ _id: userId, hospital: hospitalId }).session(session);
-    if (!userDoc) {
-      return res.status(404).json({ message: 'User not found in this hospital' });
-    }
+  // Update user details if provided
+  if (fullName) userDoc.fullName = fullName;
+  if (dateOfBirth) userDoc.dateOfBirth = dateOfBirth;
+  if (gender) userDoc.gender = gender;
+  if (phoneNumber) userDoc.phoneNumber = phoneNumber;
+  if (email) userDoc.email = email;
 
-    // Update user details if provided
-    if (fullName) userDoc.fullName = fullName;
-    if (dateOfBirth) userDoc.dateOfBirth = dateOfBirth;
-    if (gender) userDoc.gender = gender;
-    if (phoneNumber) userDoc.phoneNumber = phoneNumber;
-    if (email) userDoc.email = email;
-
-    // Update existing medications if provided
-    if (Array.isArray(medications)) {
-      for (const med of medications) {
-        if (!med.medication || !mongoose.Types.ObjectId.isValid(med.medication)) {
-          return res.status(400).json({ message: 'Invalid medication ID' });
-        }
-
-        const existingMedication = userDoc.medications.find(
-          (m) => m.medication.toString() === med.medication
-        );
-
-        if (!existingMedication) {
-          return res.status(404).json({ message: `Medication with ID ${med.medication} not found in user's list` });
-        }
-
-        // Mark for removal if specified
-        if (med.remove) {
-          existingMedication.remove = true;
-        } else {
-          // Update medication details, including custom fields
-          existingMedication.quantity = med.quantity !== undefined ? med.quantity : existingMedication.quantity;
-          existingMedication.startDate = med.startDate !== undefined ? med.startDate : existingMedication.startDate;
-          existingMedication.endDate = med.endDate !== undefined ? med.endDate : existingMedication.endDate;
-          existingMedication.current = med.current !== undefined ? med.current : existingMedication.current;
-          existingMedication.custom = med.custom !== undefined ? med.custom : existingMedication.custom;
-          existingMedication.customDosage = med.customDosage !== undefined ? med.customDosage : existingMedication.customDosage;
-
-          if (med.customFrequency) {
-            existingMedication.customFrequency.value = med.customFrequency.value !== undefined ? med.customFrequency.value : existingMedication.customFrequency.value;
-            existingMedication.customFrequency.unit = med.customFrequency.unit !== undefined ? med.customFrequency.unit : existingMedication.customFrequency.unit;
-          }
-
-          if (med.customDuration) {
-            existingMedication.customDuration.value = med.customDuration.value !== undefined ? med.customDuration.value : existingMedication.customDuration.value;
-            existingMedication.customDuration.unit = med.customDuration.unit !== undefined ? med.customDuration.unit : existingMedication.customDuration.unit;
-          }
-        }
+  // Update existing medications if provided
+  if (Array.isArray(medications)) {
+    for (const med of medications) {
+      if (!med._id || !mongoose.Types.ObjectId.isValid(med._id)) {
+        return res.status(400).json({ message: 'Invalid medication _id' });
       }
 
-      // Remove medications marked for deletion
-      userDoc.medications = userDoc.medications.filter(m => !m.remove);
+      // Find the medication by its unique _id
+      const existingMedication = userDoc.medications.find(
+        (m) => m._id.toString() === med._id
+      );
+
+      if (!existingMedication) {
+        return res.status(404).json({ message: `Medication with _id ${med._id} not found in user's list` });
+      }
+
+      if (med.remove) {
+        // Remove the medication if `remove` is true
+        userDoc.medications = userDoc.medications.filter(m => m._id.toString() !== med._id);
+      } else {
+        // Update medication details, including custom fields if not removing
+        existingMedication.quantity = med.quantity !== undefined ? med.quantity : existingMedication.quantity;
+        existingMedication.startDate = med.startDate !== undefined ? med.startDate : existingMedication.startDate;
+        existingMedication.endDate = med.endDate !== undefined ? med.endDate : existingMedication.endDate;
+        existingMedication.current = med.current !== undefined ? med.current : existingMedication.current;
+        existingMedication.custom = med.custom !== undefined ? med.custom : existingMedication.custom;
+        existingMedication.customDosage = med.customDosage !== undefined ? med.customDosage : existingMedication.customDosage;
+        
+        if (med.customFrequency) {
+          existingMedication.customFrequency = {
+            ...existingMedication.customFrequency,
+            ...med.customFrequency,
+          };
+        }
+        
+        if (med.customDuration) {
+          existingMedication.customDuration = {
+            ...existingMedication.customDuration,
+            ...med.customDuration,
+          };
+        }
+      }
     }
+}
 
-    // Handle new medications
-    if (Array.isArray(newMedications)) {
-      for (const med of newMedications) {
-        if (!med.medication || !mongoose.Types.ObjectId.isValid(med.medication)) {
-          return res.status(400).json({ message: 'Invalid medication ID' });
-        }
 
-        // Check if the medication exists in the hospital's medication list
-        const medicationExistsInHospital = hospitalDoc.medication.includes(med.medication);
-        if (!medicationExistsInHospital) {
-          return res.status(404).json({ message: `Medication with ID ${med.medication} does not exist in this hospital` });
-        }
+  // Handle new medications
+  if (Array.isArray(newMedications)) {
+    for (const med of newMedications) {
+      if (!med.medication || !mongoose.Types.ObjectId.isValid(med.medication)) {
+        return res.status(400).json({ message: 'Invalid medication ID' });
+      }
 
-        const medicationDetails = await Medication.findById(med.medication).session(session);
-        if (!medicationDetails) {
-          return res.status(404).json({ message: `Medication with ID ${med.medication} not found` });
-        }
+      // Check if the medication exists in the hospital's medication list
+      const medicationExistsInHospital = hospitalDoc.medication.includes(med.medication);
+      if (!medicationExistsInHospital) {
+        return res.status(404).json({ message: `Medication with ID ${med.medication} does not exist in this hospital `});
+      }
 
-        const quantityRequested = med.quantity || 1;
+      const medicationDetails = await Medication.findById(med.medication);
+      if (!medicationDetails) {
+        return res.status(404).json({ message: `Medication with ID ${med.medication} not found `});
+      }
 
-        // Check stock availability for the requested quantity
-        if (medicationDetails.quantityInStock < quantityRequested) {
-          return res.status(400).json({ message: `Not enough stock for medication ${medicationDetails.nameOfDrugs}` });
-        }
+      const quantityRequested = med.quantity || 1;
 
-        // Reduce the medication stock
-        medicationDetails.quantityInStock -= quantityRequested;
-        await medicationDetails.save({ session });
+      // Check stock availability for the requested quantity
+      if (medicationDetails.quantityInStock < quantityRequested) {
+        return res.status(400).json({ message: `Not enough stock for medication ${medicationDetails.nameOfDrugs}` });
+      }
 
-        // Create the new medication object
-        const newMedication = {
+      // Reduce the medication stock
+      medicationDetails.quantityInStock -= quantityRequested;
+      await medicationDetails.save();
+
+      // Create the new medication object
+      const newMedication = {
+        medication: med.medication,
+        quantity: quantityRequested,
+        startDate: med.startDate || Date.now(),
+        endDate: med.endDate,
+        current: med.current !== undefined ? med.current : true,
+      };
+      
+      if (med.custom) {
+        newMedication.custom = med.custom;
+        newMedication.customDosage = med.customDosage;
+        newMedication.customFrequency = med.customFrequency;
+        newMedication.customDuration = med.customDuration;
+      }
+
+      userDoc.medications.push(newMedication);
+
+      // Calculate total cost for the purchase
+      const totalPurchase = medicationDetails.price * quantityRequested;
+
+      const purchase = new Purchase({
+        user: userDoc._id,
+        medications: [{
           medication: med.medication,
           quantity: quantityRequested,
-          startDate: med.startDate || Date.now(),
-          endDate: med.endDate,
-          current: med.current !== undefined ? med.current : true,
-        };
+          startTime: Date.now(),
+        }],
+        hospital: hospitalId,
+        totalPurchase,
+      });
 
-        if (med.custom) {
-          newMedication.custom = med.custom;
-          newMedication.customDosage = med.customDosage;
-          newMedication.customFrequency = med.customFrequency;
-          newMedication.customDuration = med.customDuration;
-        }
+      const savedPurchase = await purchase.save();
 
-        userDoc.medications.push(newMedication);
-        // Calculate total cost for the purchase
-        const totalPurchase = medicationDetails.price * quantityRequested;
+      hospitalDoc.purchaseHistory = hospitalDoc.purchaseHistory || [];
+      hospitalDoc.purchaseHistory.push(savedPurchase._id);
+      await hospitalDoc.save();
 
-        const purchase = new Purchase({
-          user: userDoc._id,
-          medications: [{
-            medication: med.medication,
-            quantity: quantityRequested,
-            startTime: Date.now(),
-          }],
-          hospital: hospitalId,
-          totalPurchase,
-        });
+      const icsFilePath = await generateICSFile(savedPurchase._id);
 
-        const savedPurchase = await purchase.save({ session });
-
-        hospitalDoc.purchaseHistory = hospitalDoc.purchaseHistory || [];
-        hospitalDoc.purchaseHistory.push(savedPurchase._id);
-        await hospitalDoc.save({ session });
-
-        const icsFilePath = await generateICSFile(savedPurchase._id);
-
-        if (icsFilePath) {
-          await sendEmailWithICS(userDoc.email, icsFilePath, newMedication);
-        }
+      if (icsFilePath) {
+        await sendEmailWithICS(userDoc.email, icsFilePath, newMedication);
       }
     }
+  }
 
-    // Save the updated user document within the session
-    const updatedUser = await userDoc.save({ session });
-
-    // Commit the transaction
-    await session.commitTransaction();
-    session.endSession();
+  try {
+    const updatedUser = await userDoc.save();
 
     res.status(200).json({
       user: updatedUser,
     });
   } catch (error) {
-    await session.abortTransaction();
-    session.endSession();
-    console.error('Transaction failed:', error);
+    console.error('Error updating user:', error);
     res.status(500).json({ message: 'Failed to update user' });
   }
 });
