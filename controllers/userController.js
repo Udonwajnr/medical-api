@@ -141,7 +141,7 @@ const createUserInHospital = asyncHandler(async (req, res) => {
       medications: medicationObjects.map(med => ({
         medication: med.medication,
         quantity: med.quantity,
-        startTime: Date.now(),
+        startTime: med.startTime,
       })),
       hospital: hospitalId,
       totalPurchase: totalPurchase, // Use the correctly calculated total cost
@@ -312,7 +312,7 @@ const updateUserInHospital = asyncHandler(async (req, res) => {
         medications: [{
           medication: med.medication,
           quantity: quantityRequested,
-          startTime: Date.now(),
+          startTime: med.startTime,
         }],
         hospital: hospitalId,
         totalPurchase,
