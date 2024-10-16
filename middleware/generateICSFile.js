@@ -22,38 +22,40 @@ const generateICSFile = async (purchaseId) => {
             const medication = purchaseMed.medication;
             const { nameOfDrugs, dosage, frequency, duration } = medication;
         
-            const daysOrWeeks = Array.from({ length: duration.value }, (_, i) => i); // Generate reminders for each day/week
+            const daysOrWeeks = Array.from({ length: duration.value }, (_, i) => i); // Array for each day/week based on duration
         
-            let eventStart = purchaseMed.startTime ? new Date(purchaseMed.startTime) : new Date();
-            let eventEnd = new Date(eventStart);
-            eventEnd.setMinutes(eventEnd.getMinutes() + 30);
+            const baseStart = purchaseMed.startTime ? new Date(purchaseMed.startTime) : new Date();
+            const baseEnd = new Date(baseStart);
+            baseEnd.setMinutes(baseEnd.getMinutes() + 30); // Duration for each event
         
             daysOrWeeks.forEach(offset => {
-                const localStart = new Date(eventStart);
-                const localEnd = new Date(eventEnd);
+                const eventStart = new Date(baseStart);
+                const eventEnd = new Date(baseEnd);
         
+                // Adjust dates based on the duration unit (days or weeks)
                 if (duration.unit === 'days') {
-                    localStart.setDate(eventStart.getDate() + offset);
-                    localEnd.setDate(eventEnd.getDate() + offset);
+                    eventStart.setDate(baseStart.getDate() + offset);
+                    eventEnd.setDate(baseEnd.getDate() + offset);
                 } else if (duration.unit === 'weeks') {
-                    localStart.setDate(eventStart.getDate() + (offset * 7));
-                    localEnd.setDate(eventEnd.getDate() + (offset * 7));
+                    eventStart.setDate(baseStart.getDate() + (offset * 7));
+                    eventEnd.setDate(baseEnd.getDate() + (offset * 7));
                 }
         
                 if (frequency.unit === 'days') {
+                    // Daily medication reminders
                     events.push({
-                        start: [localStart.getFullYear(), localStart.getMonth() + 1, localStart.getDate(), localStart.getHours(), localStart.getMinutes()],
-                        end: [localEnd.getFullYear(), localEnd.getMonth() + 1, localEnd.getDate(), localEnd.getHours(), localEnd.getMinutes()],
+                        start: [eventStart.getFullYear(), eventStart.getMonth() + 1, eventStart.getDate(), eventStart.getHours(), eventStart.getMinutes()],
+                        end: [eventEnd.getFullYear(), eventEnd.getMonth() + 1, eventEnd.getDate(), eventEnd.getHours(), eventEnd.getMinutes()],
                         title: `${nameOfDrugs} (${dosage}) Reminder`,
                         description: `Time to take your ${nameOfDrugs} (${dosage}).`,
                     });
         
                     const dailyIntervals = 24 / frequency.value;
                     for (let i = 1; i < dailyIntervals; i++) {
-                        const intervalEventStart = new Date(localStart);
-                        const intervalEventEnd = new Date(localEnd);
-                        intervalEventStart.setHours(localStart.getHours() + i * (24 / dailyIntervals));
-                        intervalEventEnd.setHours(localEnd.getHours() + i * (24 / dailyIntervals));
+                        const intervalEventStart = new Date(eventStart);
+                        const intervalEventEnd = new Date(eventEnd);
+                        intervalEventStart.setHours(eventStart.getHours() + (i * (24 / dailyIntervals)));
+                        intervalEventEnd.setHours(eventEnd.getHours() + (i * (24 / dailyIntervals)));
         
                         events.push({
                             start: [intervalEventStart.getFullYear(), intervalEventStart.getMonth() + 1, intervalEventStart.getDate(), intervalEventStart.getHours(), intervalEventStart.getMinutes()],
@@ -63,14 +65,15 @@ const generateICSFile = async (purchaseId) => {
                         });
                     }
                 } else if (frequency.unit === 'hours') {
+                    // Medication reminders every X hours
                     const intervalHours = frequency.value;
                     const dailyIntervals = 24 / intervalHours;
         
                     for (let i = 0; i < dailyIntervals; i++) {
-                        const intervalEventStart = new Date(localStart);
-                        const intervalEventEnd = new Date(localEnd);
-                        intervalEventStart.setHours(localStart.getHours() + (i * intervalHours));
-                        intervalEventEnd.setHours(localEnd.getHours() + (i * intervalHours));
+                        const intervalEventStart = new Date(eventStart);
+                        const intervalEventEnd = new Date(eventEnd);
+                        intervalEventStart.setHours(eventStart.getHours() + (i * intervalHours));
+                        intervalEventEnd.setHours(eventEnd.getHours() + (i * intervalHours));
         
                         events.push({
                             start: [intervalEventStart.getFullYear(), intervalEventStart.getMonth() + 1, intervalEventStart.getDate(), intervalEventStart.getHours(), intervalEventStart.getMinutes()],
@@ -82,6 +85,7 @@ const generateICSFile = async (purchaseId) => {
                 }
             });
         });
+        
         
 
         // Generate ICS file content
