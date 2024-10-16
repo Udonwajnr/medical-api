@@ -6,8 +6,6 @@ const generateICSFile = require("../middleware/generateICSFile")
 
 const purchaseMedication = asyncHandler(async (req, res) => {
     const { userId, medications, hospitalId } = req.body;
-
-
     // Create a new purchase
     const purchase = new Purchase({
         user: userId,
@@ -48,7 +46,6 @@ const purchaseMedication = asyncHandler(async (req, res) => {
 
     res.status(201).json(purchase);
 });
-
 
 const getAllPurchasesFromHospital = asyncHandler(async (req, res) => {
     const { hospitalId } = req.params;

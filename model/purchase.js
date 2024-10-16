@@ -21,7 +21,7 @@ const purchaseSchema = new mongoose.Schema({
         startTime: {
             type: Date,
             default: Date.now, // Set default value to the current date and time
-            required: true, // Ensure start time is provided
+            // required: true, // Ensure start time is provided
         },
     }],
     hospital: {
