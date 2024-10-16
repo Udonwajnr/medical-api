@@ -15,7 +15,7 @@ const {
 const {authenticateToken} = require("../middleware/authenticationToken");
 
 // Apply authentication to all routes
-router.use(authenticateToken);
+// router.use(authenticateToken);
 
 // Get all users for a specific hospital
 router.get('/hospitals/:hospitalId/users', getUsersByHospital);
