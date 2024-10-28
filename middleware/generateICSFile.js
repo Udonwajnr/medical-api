@@ -15,7 +15,7 @@ const generateICSFile = async (purchaseId) => {
 
         // Prepare the events array
         const events = [];
-        console.log(purchase.medications)
+        // console.log(purchase.medications)
 
         // Inside your loop for each medication
         purchase.medications.forEach(purchaseMed => {

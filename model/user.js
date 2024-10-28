@@ -83,7 +83,6 @@ const userSchema = new schema(
       },
     ],
 
-
     newMedications: [
       {
         medication: { type: mongoose.Schema.Types.ObjectId, ref: 'Medication' },

@@ -24,13 +24,19 @@ const getUserInHospital = asyncHandler(async (req, res) => {
   }
 
   // Fetch the user within the specified hospital
-  const user = await User.findOne({ _id: userId, hospital: hospitalId }).populate({path:"medications",populate:{path:"medication"}}) .populate({
+  const user = await User.findOne({ _id: userId, hospital: hospitalId }).populate({path:"medications",populate:{path:"medication"}}).populate({
     path: "purchases",  // Populating user's purchases
     populate: { 
       path: 'medications.medication',  // Populating medication inside each purchase's medications
       model: 'Medication' 
     }
-  });;
+  }).populate({
+    path: "hospital",  // Populating user's purchases
+    populate: { 
+      path: 'medication',  // Populating medication inside each purchase's medications
+      model: 'Hospital' 
+    }
+  });
 
   // Check if user exists
   if (!user) {
@@ -255,9 +261,7 @@ const updateUserInHospital = asyncHandler(async (req, res) => {
       }
     }
 }
-
-
-  // Handle new medications
+// Handle new medications
   if (Array.isArray(newMedications)) {
     for (const med of newMedications) {
       if (!med.medication || !mongoose.Types.ObjectId.isValid(med.medication)) {
@@ -306,7 +310,6 @@ const updateUserInHospital = asyncHandler(async (req, res) => {
 
       // Calculate total cost for the purchase
       const totalPurchase = medicationDetails.price * quantityRequested;
-      console.log(newMedications)
       const purchase = new Purchase({
         user: userDoc._id,
         medications: newMedications.map((med)=>({
@@ -319,6 +322,7 @@ const updateUserInHospital = asyncHandler(async (req, res) => {
       });
 
       const savedPurchase = await purchase.save();
+      const populatedPurchase = await savedPurchase.populate({path:"medications",populate:{path:"medication"}})
 
       hospitalDoc.purchaseHistory = hospitalDoc.purchaseHistory || [];
       hospitalDoc.purchaseHistory.push(savedPurchase._id);
@@ -327,14 +331,13 @@ const updateUserInHospital = asyncHandler(async (req, res) => {
       const icsFilePath = await generateICSFile(savedPurchase._id);
 
       if (icsFilePath) {
-        await sendEmailWithICS(userDoc.email, icsFilePath, newMedication);
+        await sendEmailWithICS(userDoc, icsFilePath, newMedication, hospitalDoc, populatedPurchase);
       }
     }
   }
 
   try {
     const updatedUser = await userDoc.save();
-
     res.status(200).json({
       user: updatedUser,
     });
