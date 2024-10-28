@@ -17,7 +17,7 @@ const corsOptions = {
     const allowedOrigins = [
       'http://localhost:3000',
       'https://medical-inventory-beta.vercel.app',
-      "https://rosek-beta.vercel.app/"
+      "https://rosek-beta.vercel.app"
     ];
     if (allowedOrigins.includes(origin) || !origin) {
       callback(null, true);
