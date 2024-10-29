@@ -155,7 +155,7 @@ const createUserInHospital = asyncHandler(async (req, res) => {
 
     // Save the purchase to the database
     const savedPurchase = await purchase.save();
-
+    const populatedPurchase = await savedPurchase.populate({path:"medications",populate:{path:"medication"}})
     // Push the purchase ID into the user's purchases array
     savedUser.purchases.push(savedPurchase._id);
     await savedUser.save(); // Save the updated user document
@@ -167,7 +167,7 @@ const createUserInHospital = asyncHandler(async (req, res) => {
 
       if (icsFilePath) {
         // Send the email with ICS attachment
-        await sendEmailWithICS(savedUser.email, icsFilePath, medications);
+        await sendEmailWithICS(savedUser, icsFilePath, medications,hospitalDoc,populatedPurchase);
       }
     }
 
