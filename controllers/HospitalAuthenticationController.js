@@ -73,7 +73,7 @@ const createHospital = asyncHandler(async (req, res) => {
             <p style="color: #555;">
               This link will expire in <strong>1 hour</strong>. If you did not request this email, please ignore it.
             </p>
-            <p style="color: #555;">Best regards,<br/>The Pharma Inventory Team</p>
+            <p style="color: #555;">Best regards,<br/>The Rosek  Team</p>
             <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;">
             <p style="color: #999; text-align: center; font-size: 12px;">
               © ${new Date().getFullYear()} Pharma Inventory. All rights reserved.
