@@ -56,11 +56,11 @@ const createHospital = asyncHandler(async (req, res) => {
         subject: 'Email Verification',
         html: `
           <div style="font-family: Arial, sans-serif; line-height: 1.6; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f9f9f9; border: 1px solid #e0e0e0; border-radius: 8px;">
-            <h2 style="color: #2c3e50; text-align: center;">Pharma Inventory</h2>
+            <h2 style="color: #2c3e50; text-align: center;">Rosek Inventory</h2>
             <h3 style="color: #34495e;">Verify Your Email Address</h3>
             <p style="color: #555;">Hi there,</p>
             <p style="color: #555;">
-              Thank you for registering with Pharma Inventory. To complete your registration, please verify your email address by clicking the link below:
+              Thank you for registering with Rosek Inventory. To complete your registration, please verify your email address by clicking the link below:
             </p>
             <p style="text-align: center;">
               <a href="https://medical-inventory-beta.vercel.app/verify-email/${verificationToken}" 
@@ -89,7 +89,6 @@ const createHospital = asyncHandler(async (req, res) => {
         }
     });
 });
-
 
 
 const verifyEmail=asyncHandler(async(req,res)=>{
@@ -309,6 +308,80 @@ const resetPassword = asyncHandler(async (req, res) => {
     }
 });
 
+const resendVerificationLink = asyncHandler(async (req, res) => {
+    const { email } = req.body;
+    
+    // Check if the hospital exists
+    const hospital = await Hospital.findOne({ email });
+    if (!hospital) {
+        return res.status(400).json({ msg: 'Hospital not found' });
+    }
+
+    // Check if the hospital is already verified
+    if (hospital.isVerified) {
+        return res.status(400).json({ msg: 'Email already verified' });
+    }
+
+    // Create a new JWT token for email verification
+    const verificationToken = JWT.sign(
+        { id: hospital._id },
+        JWT_SECRET,
+        { expiresIn: '1h' } // Token expires in 1 hour
+    );
+
+    // Update the hospital with the new verification token
+    hospital.verificationToken = verificationToken;
+    await hospital.save();
+
+    const transporter = nodemailer.createTransport({
+        service: 'gmail',
+        auth: {
+            user: process.env.EMAIL_USER,
+            pass: process.env.EMAIL_PASSCODE,
+        },
+    });
+
+    const mailOptions = {
+        to: hospital.email,
+        from: process.env.EMAIL_USER,
+        subject: 'Resend Email Verification',
+        html: `
+          <div style="font-family: Arial, sans-serif; line-height: 1.6; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f9f9f9; border: 1px solid #e0e0e0; border-radius: 8px;">
+            <h2 style="color: #2c3e50; text-align: center;">Rosek Inventory</h2>
+            <h3 style="color: #34495e;">Verify Your Email Address</h3>
+            <p style="color: #555;">Hi there,</p>
+            <p style="color: #555;">
+              You have requested to resend your verification email. Please verify your email address by clicking the link below:
+            </p>
+            <p style="text-align: center;">
+              <a href="https://medical-inventory-beta.vercel.app/verify-email/${verificationToken}" 
+                style="display: inline-block; padding: 10px 20px; font-size: 16px; color: #ffffff; background-color: #3498db; text-decoration: none; border-radius: 5px;">
+                Verify Email Address
+              </a>
+            </p>
+            <p style="color: #555;">
+              This link will expire in <strong>1 hour</strong>. If you did not request this email, please ignore it.
+            </p>
+            <p style="color: #555;">Best regards,<br/>The Pharma Inventory Team</p>
+            <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;">
+            <p style="color: #999; text-align: center; font-size: 12px;">
+              © ${new Date().getFullYear()} Pharma Inventory. All rights reserved.
+            </p>
+          </div>
+        `,
+    };
+
+    transporter.sendMail(mailOptions, (err, response) => {
+        if (err) {
+            console.error('There was an error:', err);
+            return res.status(500).json({ msg: 'Failed to send verification email' });
+        } else {
+            console.log("sent")
+            res.status(200).json({ msg: 'Verification email resent successfully', token: verificationToken });
+        }
+    });
+});
+
 
 const getAllHospitals = asyncHandler(async (req, res) => {
     const hospitals = await Hospital.find().populate('users').populate('medication');
@@ -433,11 +506,11 @@ const deleteHospital = asyncHandler(async (req, res) => {
 });
 
 
-
 module.exports={createHospital,
     verifyEmail,
     loginHospital,
     refreshAccessToken,
+    resendVerificationLink,
     logoutHospital,
     forgotPassword,
     resetPassword,

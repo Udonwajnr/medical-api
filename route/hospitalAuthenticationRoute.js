@@ -6,6 +6,7 @@ const {
     loginHospital,
     forgotPassword,
     resetPassword,
+    resendVerificationLink,
     updateHospital,
     getHospitalById,
     deleteHospital,
@@ -22,6 +23,7 @@ router.post('/login', loginHospital);
 router.post('/forgot-password', forgotPassword);
 router.post('/reset-password', resetPassword);
 router.get('/verify-email/:token', verifyEmail);
+router.post('/resend-verification', resendVerificationLink);
 // Route for refreshing the access token
 router.post('/refresh-token', refreshAccessToken);
 router.post('/logout', logoutHospital);
