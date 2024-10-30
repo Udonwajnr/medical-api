@@ -16,6 +16,8 @@ const createHospital = asyncHandler(async (req, res) => {
         return res.status(400).json({ msg: 'Passwords do not match' });
     }
 
+    const normalizedEmail = email.toLowerCase();
+
     let hospital = await Hospital.findOne({ email });
     if (hospital) {
         return res.status(400).json({ msg: 'Hospital already exists' });
@@ -23,7 +25,7 @@ const createHospital = asyncHandler(async (req, res) => {
 
     hospital = new Hospital({
         name,
-        email,
+        email:normalizedEmail,
         password, // Save plain text password, hashing happens in pre-save hook
         isVerified: false, // Make sure to set the default verification status
     });
