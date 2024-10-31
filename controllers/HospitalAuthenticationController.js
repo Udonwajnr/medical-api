@@ -20,7 +20,7 @@ const createHospital = asyncHandler(async (req, res) => {
 
     let hospital = await Hospital.findOne({ email });
     if (hospital) {
-        return res.status(400).json({ msg: 'Hospital already exists' });
+        return res.status(400).json({ msg: 'Hospital already exists With this email' });
     }
 
     hospital = new Hospital({
@@ -65,7 +65,7 @@ const createHospital = asyncHandler(async (req, res) => {
               Thank you for registering with Rosek Inventory. To complete your registration, please verify your email address by clicking the link below:
             </p>
             <p style="text-align: center;">
-              <a href="https://medical-inventory-beta.vercel.app/verify-email/${verificationToken}" 
+              <a href="https://rosek-beta.vercel.app/verify-email/${verificationToken}" 
                 style="display: inline-block; padding: 10px 20px; font-size: 16px; color: #ffffff; background-color: #3498db; text-decoration: none; border-radius: 5px;">
                 Verify Email Address
               </a>
